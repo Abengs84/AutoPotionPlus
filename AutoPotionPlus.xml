@@ -1,0 +1,279 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Frame name="AutoPotionPlusFrame" parent="UIParent" movable="true" enableMouse="true" hidden="true">
+        <Size x="400" y="250"/>
+        <Anchors>
+            <Anchor point="CENTER">
+                <Offset x="0" y="0"/>
+            </Anchor>
+        </Anchors>
+        <Layers>
+            <Layer level="BACKGROUND">
+                <Texture setAllPoints="true">
+                    <Color r="0" g="0" b="0" a="0.8"/>
+                </Texture>
+            </Layer>
+            <Layer level="BORDER">
+                <Texture name="$parentTopLeft" file="Interface\GLUES\COMMON\Glue-Panel-2-TL">
+                    <Size x="64" y="64"/>
+                    <Anchors>
+                        <Anchor point="TOPLEFT"/>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentTopRight" file="Interface\GLUES\COMMON\Glue-Panel-2-TR">
+                    <Size x="64" y="64"/>
+                    <Anchors>
+                        <Anchor point="TOPRIGHT"/>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentTop" file="Interface\GLUES\COMMON\Glue-Panel-2-T">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentTopLeft"/>
+                        <Anchor point="TOPRIGHT" relativePoint="TOPLEFT" relativeTo="$parentTopRight"/>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentBottomLeft" file="Interface\GLUES\COMMON\Glue-Panel-2-BL">
+                    <Size x="64" y="64"/>
+                    <Anchors>
+                        <Anchor point="BOTTOMLEFT"/>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentBottomRight" file="Interface\GLUES\COMMON\Glue-Panel-2-BR">
+                    <Size x="64" y="64"/>
+                    <Anchors>
+                        <Anchor point="BOTTOMRIGHT"/>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentBottom" file="Interface\GLUES\COMMON\Glue-Panel-2-B">
+                    <Anchors>
+                        <Anchor point="BOTTOMLEFT" relativePoint="BOTTOMRIGHT" relativeTo="$parentBottomLeft"/>
+                        <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMLEFT" relativeTo="$parentBottomRight"/>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentLeft" file="Interface\GLUES\COMMON\Glue-Panel-2-L">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeTo="$parentTopLeft"/>
+                        <Anchor point="BOTTOMLEFT" relativePoint="TOPLEFT" relativeTo="$parentBottomLeft"/>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentRight" file="Interface\GLUES\COMMON\Glue-Panel-2-R">
+                    <Anchors>
+                        <Anchor point="TOPRIGHT" relativePoint="BOTTOMRIGHT" relativeTo="$parentTopRight"/>
+                        <Anchor point="BOTTOMRIGHT" relativePoint="TOPRIGHT" relativeTo="$parentBottomRight"/>
+                    </Anchors>
+                </Texture>
+            </Layer>
+            <Layer level="ARTWORK">
+                <FontString name="AutoPotionPlusTitle" inherits="GameFontNormalLarge" text="AutoPotion+">
+                    <Size x="180" y="16"/>
+                    <Anchors>
+                        <Anchor point="TOP" y="-15"/>
+                    </Anchors>
+                    <Color r="1" g="0.82" b="0"/>
+                </FontString>
+                <FontString name="$parentLowestTitle" inherits="GameFontNormal" text="Use Lowest Quality First">
+                    <Anchors>
+                        <Anchor point="TOP" y="-50"/>
+                    </Anchors>
+                    <Color r="1" g="0.82" b="0"/>
+                </FontString>
+            </Layer>
+        </Layers>
+        <Frames>
+            <Button name="$parentCloseButton" inherits="UIPanelCloseButton">
+                <Anchors>
+                    <Anchor point="TOPRIGHT" x="-5" y="-5"/>
+                </Anchors>
+            </Button>
+
+            <!-- Healing Section -->
+            <Frame name="$parentHealingSection">
+                <Size x="70" y="90"/>
+                <Anchors>
+                    <Anchor point="TOPLEFT" x="20" y="-70"/>
+                </Anchors>
+                <Layers>
+                    <Layer level="ARTWORK">
+                        <Texture name="$parentIcon" file="Interface\Icons\INV_Potion_54">
+                            <Size x="32" y="32"/>
+                            <Anchors>
+                                <Anchor point="TOP" y="0"/>
+                            </Anchors>
+                        </Texture>
+                        <FontString name="$parentLabel" inherits="GameFontNormalSmall" text="Healing">
+                            <Anchors>
+                                <Anchor point="TOP" y="-35"/>
+                            </Anchors>
+                        </FontString>
+                    </Layer>
+                </Layers>
+                <Frames>
+                    <CheckButton name="$parentLowestCheck" inherits="UICheckButtonTemplate">
+                        <Anchors>
+                            <Anchor point="TOP" y="-55"/>
+                        </Anchors>
+                    </CheckButton>
+                </Frames>
+            </Frame>
+
+            <!-- Mana Section -->
+            <Frame name="$parentManaSection">
+                <Size x="70" y="90"/>
+                <Anchors>
+                    <Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$parentHealingSection" x="10"/>
+                </Anchors>
+                <Layers>
+                    <Layer level="ARTWORK">
+                        <Texture name="$parentIcon" file="Interface\Icons\INV_Potion_76">
+                            <Size x="32" y="32"/>
+                            <Anchors>
+                                <Anchor point="TOP" y="0"/>
+                            </Anchors>
+                        </Texture>
+                        <FontString name="$parentLabel" inherits="GameFontNormalSmall" text="Mana">
+                            <Anchors>
+                                <Anchor point="TOP" y="-35"/>
+                            </Anchors>
+                        </FontString>
+                    </Layer>
+                </Layers>
+                <Frames>
+                    <CheckButton name="$parentLowestCheck" inherits="UICheckButtonTemplate">
+                        <Anchors>
+                            <Anchor point="TOP" y="-55"/>
+                        </Anchors>
+                    </CheckButton>
+                </Frames>
+            </Frame>
+
+            <!-- Food Section -->
+            <Frame name="$parentFoodSection">
+                <Size x="70" y="90"/>
+                <Anchors>
+                    <Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$parentManaSection" x="10"/>
+                </Anchors>
+                <Layers>
+                    <Layer level="ARTWORK">
+                        <Texture name="$parentIcon" file="Interface\Icons\INV_Misc_Food_23">
+                            <Size x="32" y="32"/>
+                            <Anchors>
+                                <Anchor point="TOP" y="0"/>
+                            </Anchors>
+                        </Texture>
+                        <FontString name="$parentLabel" inherits="GameFontNormalSmall" text="Food">
+                            <Anchors>
+                                <Anchor point="TOP" y="-35"/>
+                            </Anchors>
+                        </FontString>
+                    </Layer>
+                </Layers>
+                <Frames>
+                    <CheckButton name="$parentLowestCheck" inherits="UICheckButtonTemplate">
+                        <Anchors>
+                            <Anchor point="TOP" y="-55"/>
+                        </Anchors>
+                    </CheckButton>
+                </Frames>
+            </Frame>
+
+            <!-- Drink Section -->
+            <Frame name="$parentDrinkSection">
+                <Size x="70" y="90"/>
+                <Anchors>
+                    <Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$parentFoodSection" x="10"/>
+                </Anchors>
+                <Layers>
+                    <Layer level="ARTWORK">
+                        <Texture name="$parentIcon" file="Interface\Icons\INV_Drink_07">
+                            <Size x="32" y="32"/>
+                            <Anchors>
+                                <Anchor point="TOP" y="0"/>
+                            </Anchors>
+                        </Texture>
+                        <FontString name="$parentLabel" inherits="GameFontNormalSmall" text="Drink">
+                            <Anchors>
+                                <Anchor point="TOP" y="-35"/>
+                            </Anchors>
+                        </FontString>
+                    </Layer>
+                </Layers>
+                <Frames>
+                    <CheckButton name="$parentLowestCheck" inherits="UICheckButtonTemplate">
+                        <Anchors>
+                            <Anchor point="TOP" y="-55"/>
+                        </Anchors>
+                    </CheckButton>
+                </Frames>
+            </Frame>
+
+            <!-- Bandage Section -->
+            <Frame name="$parentBandageSection">
+                <Size x="70" y="90"/>
+                <Anchors>
+                    <Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$parentDrinkSection" x="10"/>
+                </Anchors>
+                <Layers>
+                    <Layer level="ARTWORK">
+                        <Texture name="$parentIcon" file="Interface\Icons\INV_Misc_Bandage_12">
+                            <Size x="32" y="32"/>
+                            <Anchors>
+                                <Anchor point="TOP" y="0"/>
+                            </Anchors>
+                        </Texture>
+                        <FontString name="$parentLabel" inherits="GameFontNormalSmall" text="Bandage">
+                            <Anchors>
+                                <Anchor point="TOP" y="-35"/>
+                            </Anchors>
+                        </FontString>
+                    </Layer>
+                </Layers>
+                <Frames>
+                    <CheckButton name="$parentLowestCheck" inherits="UICheckButtonTemplate">
+                        <Anchors>
+                            <Anchor point="TOP" y="-55"/>
+                        </Anchors>
+                    </CheckButton>
+                </Frames>
+            </Frame>
+
+            <!-- Warrior Mode at the bottom -->
+            <CheckButton name="$parentWarriorModeCheck" inherits="UICheckButtonTemplate">
+                <Anchors>
+                    <Anchor point="TOPLEFT" x="20" y="-180"/>
+                </Anchors>
+            </CheckButton>
+
+            <!-- Healthstone Priority Checkbox -->
+            <Frame name="$parentHealthstoneSection">
+                <Size x="300" y="30"/>
+                <Anchors>
+                    <Anchor point="TOPLEFT" x="20" y="-210"/>
+                </Anchors>
+                <Layers>
+                    <Layer level="ARTWORK">
+                        <Texture name="$parentIcon" file="Interface\Icons\INV_Stone_04">
+                            <Size x="16" y="16"/>
+                            <Anchors>
+                                <Anchor point="LEFT" x="0" y="0"/>
+                            </Anchors>
+                        </Texture>
+                    </Layer>
+                </Layers>
+                <Frames>
+                    <CheckButton name="$parentLowestCheck" inherits="UICheckButtonTemplate">
+                        <Anchors>
+                            <Anchor point="LEFT" x="20" y="0"/>
+                        </Anchors>
+                    </CheckButton>
+                </Frames>
+            </Frame>
+        </Frames>
+        <Scripts>
+            <OnMouseDown>
+                self:StartMoving()
+            </OnMouseDown>
+            <OnMouseUp>
+                self:StopMovingOrSizing()
+            </OnMouseUp>
+        </Scripts>
+    </Frame>
+</Ui>
