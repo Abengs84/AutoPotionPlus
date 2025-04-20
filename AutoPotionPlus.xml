@@ -266,6 +266,177 @@
                     </CheckButton>
                 </Frames>
             </Frame>
+
+            <!-- Add this button to the main frame -->
+            <Button name="$parentManageItemsButton" inherits="UIPanelButtonTemplate" text="Manage Items">
+                <Size x="100" y="22"/>
+                <Anchors>
+                    <Anchor point="BOTTOMRIGHT" x="-10" y="10"/>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        if AutoPotionPlusItemListManager:IsShown() then
+                            AutoPotionPlusItemListManager:Hide()
+                        else
+                            AutoPotionPlusItemListManager:Show()
+                        end
+                    </OnClick>
+                </Scripts>
+            </Button>
+        </Frames>
+        <Scripts>
+            <OnMouseDown>
+                self:StartMoving()
+            </OnMouseDown>
+            <OnMouseUp>
+                self:StopMovingOrSizing()
+            </OnMouseUp>
+        </Scripts>
+    </Frame>
+
+    <!-- Add the ItemListManager as a separate top-level frame -->
+    <Frame name="AutoPotionPlusItemListManager" parent="UIParent" movable="true" enableMouse="true" hidden="true">
+        <Size x="400" y="400"/>
+        <Anchors>
+            <Anchor point="LEFT" relativePoint="RIGHT" relativeTo="AutoPotionPlusFrame" x="10" y="0"/>
+        </Anchors>
+        <Layers>
+            <Layer level="BACKGROUND">
+                <Texture setAllPoints="true">
+                    <Color r="0" g="0" b="0" a="0.8"/>
+                </Texture>
+            </Layer>
+            <Layer level="BORDER">
+                <Texture name="$parentTopLeft" file="Interface\GLUES\COMMON\Glue-Panel-2-TL">
+                    <Size x="64" y="64"/>
+                    <Anchors>
+                        <Anchor point="TOPLEFT"/>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentTopRight" file="Interface\GLUES\COMMON\Glue-Panel-2-TR">
+                    <Size x="64" y="64"/>
+                    <Anchors>
+                        <Anchor point="TOPRIGHT"/>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentTop" file="Interface\GLUES\COMMON\Glue-Panel-2-T">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentTopLeft"/>
+                        <Anchor point="TOPRIGHT" relativePoint="TOPLEFT" relativeTo="$parentTopRight"/>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentBottomLeft" file="Interface\GLUES\COMMON\Glue-Panel-2-BL">
+                    <Size x="64" y="64"/>
+                    <Anchors>
+                        <Anchor point="BOTTOMLEFT"/>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentBottomRight" file="Interface\GLUES\COMMON\Glue-Panel-2-BR">
+                    <Size x="64" y="64"/>
+                    <Anchors>
+                        <Anchor point="BOTTOMRIGHT"/>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentBottom" file="Interface\GLUES\COMMON\Glue-Panel-2-B">
+                    <Anchors>
+                        <Anchor point="BOTTOMLEFT" relativePoint="BOTTOMRIGHT" relativeTo="$parentBottomLeft"/>
+                        <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMLEFT" relativeTo="$parentBottomRight"/>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentLeft" file="Interface\GLUES\COMMON\Glue-Panel-2-L">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeTo="$parentTopLeft"/>
+                        <Anchor point="BOTTOMLEFT" relativePoint="TOPLEFT" relativeTo="$parentBottomLeft"/>
+                    </Anchors>
+                </Texture>
+                <Texture name="$parentRight" file="Interface\GLUES\COMMON\Glue-Panel-2-R">
+                    <Anchors>
+                        <Anchor point="TOPRIGHT" relativePoint="BOTTOMRIGHT" relativeTo="$parentTopRight"/>
+                        <Anchor point="BOTTOMRIGHT" relativePoint="TOPRIGHT" relativeTo="$parentBottomRight"/>
+                    </Anchors>
+                </Texture>
+            </Layer>
+            <Layer level="ARTWORK">
+                <FontString name="$parentTitle" inherits="GameFontNormalLarge" text="Item List Manager">
+                    <Anchors>
+                        <Anchor point="TOP" y="-15"/>
+                    </Anchors>
+                    <Color r="1" g="0.82" b="0"/>
+                </FontString>
+            </Layer>
+        </Layers>
+        <Frames>
+            <Button name="$parentCloseButton" inherits="UIPanelCloseButton">
+                <Anchors>
+                    <Anchor point="TOPRIGHT" x="-5" y="-5"/>
+                </Anchors>
+            </Button>
+            
+            <Frame name="$parentCategoryList">
+                <Size x="150" y="240"/>
+                <Anchors>
+                    <Anchor point="TOPLEFT" x="20" y="-40"/>
+                </Anchors>
+                <Layers>
+                    <Layer level="ARTWORK">
+                        <FontString name="$parentTitle" inherits="GameFontNormalLarge" text="Categories">
+                            <Anchors>
+                                <Anchor point="TOPLEFT" y="0"/>
+                            </Anchors>
+                            <Color r="1" g="0.82" b="0"/>
+                        </FontString>
+                    </Layer>
+                </Layers>
+            </Frame>
+            
+            <Frame name="$parentItemList">
+                <Size x="200" y="240"/>
+                <Anchors>
+                    <Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentCategoryList" x="10" y="0"/>
+                </Anchors>
+                <Layers>
+                    <Layer level="BACKGROUND">
+                        <Texture setAllPoints="true">
+                            <Color r="0" g="0" b="0" a="0.3"/>
+                        </Texture>
+                    </Layer>
+                </Layers>
+            </Frame>
+            
+            <Frame name="$parentDropZone">
+                <Size x="360" y="60"/>
+                <Anchors>
+                    <Anchor point="BOTTOM" y="40"/>
+                </Anchors>
+                <Layers>
+                    <Layer level="BACKGROUND">
+                        <Texture setAllPoints="true">
+                            <Color r="0" g="0" b="0" a="0.3"/>
+                        </Texture>
+                    </Layer>
+                    <Layer level="ARTWORK">
+                        <FontString name="$parentText" inherits="GameFontNormalLarge" text="Drop items here to add them">
+                            <Anchors>
+                                <Anchor point="CENTER"/>
+                            </Anchors>
+                            <Color r="1" g="0.82" b="0"/>
+                        </FontString>
+                    </Layer>
+                </Layers>
+            </Frame>
+
+            <!-- Add this inside the AutoPotionPlusItemListManager frame, just above the DropZone -->
+            <Button name="$parentResetButton" inherits="UIPanelButtonTemplate" text="Reset to Defaults">
+                <Size x="120" y="22"/>
+                <Anchors>
+                    <Anchor point="BOTTOMLEFT" x="10" y="10"/>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        ResetItemLists()
+                    </OnClick>
+                </Scripts>
+            </Button>
         </Frames>
         <Scripts>
             <OnMouseDown>
