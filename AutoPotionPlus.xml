@@ -1,72 +1,38 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <Frame name="AutoPotionPlusFrame" parent="UIParent" movable="true" enableMouse="true" hidden="true">
+    <Frame name="AutoPotionPlusFrame" parent="UIParent" movable="true" enableMouse="true" hidden="true" inherits="BackdropTemplate">
         <Size x="400" y="250"/>
         <Anchors>
             <Anchor point="CENTER">
                 <Offset x="0" y="0"/>
             </Anchor>
         </Anchors>
+        <KeyValues>
+            <KeyValue key="backdropInfo" value="BACKDROP_DIALOG_32_32" type="global"/>
+        </KeyValues>
         <Layers>
             <Layer level="BACKGROUND">
-                <Texture setAllPoints="true">
+                <Texture>
+                    <Anchors>
+                        <Anchor point="TOPLEFT" x="8" y="-8"/>
+                        <Anchor point="BOTTOMRIGHT" x="-8" y="8"/>
+                    </Anchors>
                     <Color r="0" g="0" b="0" a="0.8"/>
                 </Texture>
             </Layer>
             <Layer level="BORDER">
-                <Texture name="$parentTopLeft" file="Interface\GLUES\COMMON\Glue-Panel-2-TL">
-                    <Size x="64" y="64"/>
-                    <Anchors>
-                        <Anchor point="TOPLEFT"/>
-                    </Anchors>
-                </Texture>
-                <Texture name="$parentTopRight" file="Interface\GLUES\COMMON\Glue-Panel-2-TR">
-                    <Size x="64" y="64"/>
-                    <Anchors>
-                        <Anchor point="TOPRIGHT"/>
-                    </Anchors>
-                </Texture>
-                <Texture name="$parentTop" file="Interface\GLUES\COMMON\Glue-Panel-2-T">
-                    <Anchors>
-                        <Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentTopLeft"/>
-                        <Anchor point="TOPRIGHT" relativePoint="TOPLEFT" relativeTo="$parentTopRight"/>
-                    </Anchors>
-                </Texture>
-                <Texture name="$parentBottomLeft" file="Interface\GLUES\COMMON\Glue-Panel-2-BL">
-                    <Size x="64" y="64"/>
-                    <Anchors>
-                        <Anchor point="BOTTOMLEFT"/>
-                    </Anchors>
-                </Texture>
-                <Texture name="$parentBottomRight" file="Interface\GLUES\COMMON\Glue-Panel-2-BR">
-                    <Size x="64" y="64"/>
-                    <Anchors>
-                        <Anchor point="BOTTOMRIGHT"/>
-                    </Anchors>
-                </Texture>
-                <Texture name="$parentBottom" file="Interface\GLUES\COMMON\Glue-Panel-2-B">
-                    <Anchors>
-                        <Anchor point="BOTTOMLEFT" relativePoint="BOTTOMRIGHT" relativeTo="$parentBottomLeft"/>
-                        <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMLEFT" relativeTo="$parentBottomRight"/>
-                    </Anchors>
-                </Texture>
-                <Texture name="$parentLeft" file="Interface\GLUES\COMMON\Glue-Panel-2-L">
-                    <Anchors>
-                        <Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeTo="$parentTopLeft"/>
-                        <Anchor point="BOTTOMLEFT" relativePoint="TOPLEFT" relativeTo="$parentBottomLeft"/>
-                    </Anchors>
-                </Texture>
-                <Texture name="$parentRight" file="Interface\GLUES\COMMON\Glue-Panel-2-R">
-                    <Anchors>
-                        <Anchor point="TOPRIGHT" relativePoint="BOTTOMRIGHT" relativeTo="$parentTopRight"/>
-                        <Anchor point="BOTTOMRIGHT" relativePoint="TOPRIGHT" relativeTo="$parentBottomRight"/>
-                    </Anchors>
-                </Texture>
+                <!-- Remove all old border textures -->
             </Layer>
             <Layer level="ARTWORK">
+                <Texture file="Interface\DialogFrame\UI-DialogBox-Header">
+                    <Size x="320" y="64"/>
+                    <Anchors>
+                        <Anchor point="TOP" x="0" y="12"/>
+                    </Anchors>
+                </Texture>
                 <FontString name="AutoPotionPlusTitle" inherits="GameFontNormalLarge" text="AutoPotion+">
                     <Size x="180" y="16"/>
                     <Anchors>
-                        <Anchor point="TOP" y="-15"/>
+                        <Anchor point="TOP" y="0"/>
                     </Anchors>
                     <Color r="1" g="0.82" b="0"/>
                 </FontString>
@@ -87,7 +53,7 @@
 
             <!-- Healing Section -->
             <Frame name="$parentHealingSection">
-                <Size x="70" y="90"/>
+                <Size x="63" y="90"/>
                 <Anchors>
                     <Anchor point="TOPLEFT" x="20" y="-70"/>
                 </Anchors>
@@ -117,7 +83,7 @@
 
             <!-- Mana Section -->
             <Frame name="$parentManaSection">
-                <Size x="70" y="90"/>
+                <Size x="63" y="90"/>
                 <Anchors>
                     <Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$parentHealingSection" x="10"/>
                 </Anchors>
@@ -147,7 +113,7 @@
 
             <!-- Food Section -->
             <Frame name="$parentFoodSection">
-                <Size x="70" y="90"/>
+                <Size x="63" y="90"/>
                 <Anchors>
                     <Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$parentManaSection" x="10"/>
                 </Anchors>
@@ -177,7 +143,7 @@
 
             <!-- Drink Section -->
             <Frame name="$parentDrinkSection">
-                <Size x="70" y="90"/>
+                <Size x="63" y="90"/>
                 <Anchors>
                     <Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$parentFoodSection" x="10"/>
                 </Anchors>
@@ -205,9 +171,9 @@
                 </Frames>
             </Frame>
 
-            <!-- Bandage Section -->
+            <!-- Bandage Section - Make it wider -->
             <Frame name="$parentBandageSection">
-                <Size x="70" y="90"/>
+                <Size x="63" y="90"/>
                 <Anchors>
                     <Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$parentDrinkSection" x="10"/>
                 </Anchors>
@@ -238,7 +204,7 @@
             <!-- Warrior Mode at the bottom -->
             <CheckButton name="$parentWarriorModeCheck" inherits="UICheckButtonTemplate">
                 <Anchors>
-                    <Anchor point="TOPLEFT" x="20" y="-180"/>
+                    <Anchor point="TOPLEFT" x="40" y="-180"/>
                 </Anchors>
             </CheckButton>
 
@@ -295,71 +261,37 @@
     </Frame>
 
     <!-- Add the ItemListManager as a separate top-level frame -->
-    <Frame name="AutoPotionPlusItemListManager" parent="UIParent" movable="true" enableMouse="true" hidden="true">
-        <Size x="400" y="400"/>
+    <Frame name="AutoPotionPlusItemListManager" parent="UIParent" movable="true" enableMouse="true" hidden="true" inherits="BackdropTemplate">
+        <Size x="450" y="400"/>
         <Anchors>
             <Anchor point="LEFT" relativePoint="RIGHT" relativeTo="AutoPotionPlusFrame" x="10" y="0"/>
         </Anchors>
+        <KeyValues>
+            <KeyValue key="backdropInfo" value="BACKDROP_DIALOG_32_32" type="global"/>
+        </KeyValues>
         <Layers>
             <Layer level="BACKGROUND">
-                <Texture setAllPoints="true">
+                <Texture>
+                    <Anchors>
+                        <Anchor point="TOPLEFT" x="8" y="-8"/>
+                        <Anchor point="BOTTOMRIGHT" x="-8" y="8"/>
+                    </Anchors>
                     <Color r="0" g="0" b="0" a="0.8"/>
                 </Texture>
             </Layer>
             <Layer level="BORDER">
-                <Texture name="$parentTopLeft" file="Interface\GLUES\COMMON\Glue-Panel-2-TL">
-                    <Size x="64" y="64"/>
-                    <Anchors>
-                        <Anchor point="TOPLEFT"/>
-                    </Anchors>
-                </Texture>
-                <Texture name="$parentTopRight" file="Interface\GLUES\COMMON\Glue-Panel-2-TR">
-                    <Size x="64" y="64"/>
-                    <Anchors>
-                        <Anchor point="TOPRIGHT"/>
-                    </Anchors>
-                </Texture>
-                <Texture name="$parentTop" file="Interface\GLUES\COMMON\Glue-Panel-2-T">
-                    <Anchors>
-                        <Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentTopLeft"/>
-                        <Anchor point="TOPRIGHT" relativePoint="TOPLEFT" relativeTo="$parentTopRight"/>
-                    </Anchors>
-                </Texture>
-                <Texture name="$parentBottomLeft" file="Interface\GLUES\COMMON\Glue-Panel-2-BL">
-                    <Size x="64" y="64"/>
-                    <Anchors>
-                        <Anchor point="BOTTOMLEFT"/>
-                    </Anchors>
-                </Texture>
-                <Texture name="$parentBottomRight" file="Interface\GLUES\COMMON\Glue-Panel-2-BR">
-                    <Size x="64" y="64"/>
-                    <Anchors>
-                        <Anchor point="BOTTOMRIGHT"/>
-                    </Anchors>
-                </Texture>
-                <Texture name="$parentBottom" file="Interface\GLUES\COMMON\Glue-Panel-2-B">
-                    <Anchors>
-                        <Anchor point="BOTTOMLEFT" relativePoint="BOTTOMRIGHT" relativeTo="$parentBottomLeft"/>
-                        <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMLEFT" relativeTo="$parentBottomRight"/>
-                    </Anchors>
-                </Texture>
-                <Texture name="$parentLeft" file="Interface\GLUES\COMMON\Glue-Panel-2-L">
-                    <Anchors>
-                        <Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeTo="$parentTopLeft"/>
-                        <Anchor point="BOTTOMLEFT" relativePoint="TOPLEFT" relativeTo="$parentBottomLeft"/>
-                    </Anchors>
-                </Texture>
-                <Texture name="$parentRight" file="Interface\GLUES\COMMON\Glue-Panel-2-R">
-                    <Anchors>
-                        <Anchor point="TOPRIGHT" relativePoint="BOTTOMRIGHT" relativeTo="$parentTopRight"/>
-                        <Anchor point="BOTTOMRIGHT" relativePoint="TOPRIGHT" relativeTo="$parentBottomRight"/>
-                    </Anchors>
-                </Texture>
+                <!-- Remove all old border textures -->
             </Layer>
             <Layer level="ARTWORK">
+                <Texture file="Interface\DialogFrame\UI-DialogBox-Header">
+                    <Size x="320" y="64"/>
+                    <Anchors>
+                        <Anchor point="TOP" x="0" y="12"/>
+                    </Anchors>
+                </Texture>
                 <FontString name="$parentTitle" inherits="GameFontNormalLarge" text="Item List Manager">
                     <Anchors>
-                        <Anchor point="TOP" y="-15"/>
+                        <Anchor point="TOP" y="0"/>
                     </Anchors>
                     <Color r="1" g="0.82" b="0"/>
                 </FontString>
@@ -389,19 +321,28 @@
                 </Layers>
             </Frame>
             
-            <Frame name="$parentItemList">
+            <ScrollFrame name="$parentItemListScroll" inherits="UIPanelScrollFrameTemplate">
                 <Size x="200" y="240"/>
                 <Anchors>
                     <Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentCategoryList" x="10" y="0"/>
                 </Anchors>
                 <Layers>
                     <Layer level="BACKGROUND">
-                        <Texture setAllPoints="true">
+                        <Texture>
+                            <Anchors>
+                                <Anchor point="TOPLEFT" x="8" y="-8"/>
+                                <Anchor point="BOTTOMRIGHT" x="-8" y="8"/>
+                            </Anchors>
                             <Color r="0" g="0" b="0" a="0.3"/>
                         </Texture>
                     </Layer>
                 </Layers>
-            </Frame>
+                <ScrollChild>
+                    <Frame name="$parentItemListScrollChild">
+                        <Size x="200" y="240"/>
+                    </Frame>
+                </ScrollChild>
+            </ScrollFrame>
             
             <Frame name="$parentDropZone">
                 <Size x="360" y="60"/>
@@ -417,7 +358,7 @@
                     <Layer level="ARTWORK">
                         <FontString name="$parentText" inherits="GameFontNormalLarge" text="Drop items here to add them">
                             <Anchors>
-                                <Anchor point="CENTER"/>
+                                <Anchor point="CENTER" x="0" y="10"/>
                             </Anchors>
                             <Color r="1" g="0.82" b="0"/>
                         </FontString>
@@ -433,7 +374,7 @@
                 </Anchors>
                 <Scripts>
                     <OnClick>
-                        ResetItemLists()
+                        ResetAllSettings()
                     </OnClick>
                 </Scripts>
             </Button>
