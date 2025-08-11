@@ -96,6 +96,7 @@ local drinks = {
 
 local foods = {
     21215, -- Graccu's Mince Meat Fruitcake
+    21537, -- Festival Dumplings
     23172, -- Refreshing Red Apple
     21235, -- Winter Veil Roast
     21240, -- Winter Veil Candy
@@ -305,6 +306,8 @@ local defaults = {
     useLowestBandage = false,
     warriorMode = false,
     useHealthstoneFirst = false,
+    useAmountPriority = true, -- Choose least amount first when levels are same
+    preferConjured = false, -- Always choose conjured food/drink first
     removedItems = {} -- Add this to track removed items
 }
 
@@ -352,14 +355,172 @@ local pendingItemCount = 0
 local itemCacheFrame = CreateFrame("Frame")
 itemCacheFrame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 
--- First, define the helper functions and data management functions
+-- Add debug logging system
+local DEBUG_MODE = false -- Disabled chat debug by default
+local debugLog = {}
+
+-- Add this variable near other global variables
+local debugLogEditBox = nil
+
+local function LogDebug(message)
+    if DEBUG_MODE then
+        table.insert(debugLog, message)
+        print("AutoPotionPlus: " .. message)
+    else
+        -- Still add to debug log for UI, just don't print to chat
+        table.insert(debugLog, message)
+    end
+end
+
+local function SaveDebugLogToSavedVariables()
+    local log = table.concat(debugLog, "\n")
+    if log == "" then
+        print("AutoPotionPlus: No debug log available to save.")
+        return
+    end
+    
+    -- Save to SavedVariables
+    if not AutoPotionPlusDebugLogs then
+        AutoPotionPlusDebugLogs = {}
+    end
+    
+    local timestamp = date("%Y-%m-%d_%H-%M-%S")
+    AutoPotionPlusDebugLogs[timestamp] = log
+    
+    -- Keep only last 5 logs to avoid bloat
+    local count = 0
+    for _ in pairs(AutoPotionPlusDebugLogs) do
+        count = count + 1
+    end
+    
+    if count > 5 then
+        -- Remove oldest logs
+        local timestamps = {}
+        for ts in pairs(AutoPotionPlusDebugLogs) do
+            table.insert(timestamps, ts)
+        end
+        table.sort(timestamps)
+        
+        for i = 1, count - 5 do
+            AutoPotionPlusDebugLogs[timestamps[i]] = nil
+        end
+    end
+    
+    -- Force save to disk
+    if SaveVariablesPerCharacter then
+        SaveVariablesPerCharacter("AutoPotionPlus")
+    end
+    
+    print("AutoPotionPlus: Debug log saved to SavedVariables with timestamp: " .. timestamp)
+    print("AutoPotionPlus: Use /appshowlog " .. timestamp .. " to view it")
+    print("AutoPotionPlus: Use /appexport " .. timestamp .. " to export it")
+end
+
+-- Add debug slash command
+SLASH_AUTOPOTIONDEBUGLOG1 = "/appdebuglog"
+SlashCmdList["AUTOPOTIONDEBUGLOG"] = function()
+    local log = table.concat(debugLog, "\n")
+    if log == "" then
+        print("AutoPotionPlus: No debug log available. Try using the addon first.")
+    else
+        print("AutoPotionPlus: Debug log copied to chat:")
+        print(log)
+        SaveDebugLogToSavedVariables()
+        debugLog = {} -- Clear log after saving
+    end
+end
+
+-- Add command to show saved logs
+SLASH_AUTOPOTIONSHOWLOG1 = "/appshowlog"
+SlashCmdList["AUTOPOTIONSHOWLOG"] = function(msg)
+    if not AutoPotionPlusDebugLogs then
+        print("AutoPotionPlus: No saved debug logs found.")
+        return
+    end
+    
+    if msg == "" then
+        -- Show list of available logs
+        print("AutoPotionPlus: Available debug logs:")
+        for timestamp in pairs(AutoPotionPlusDebugLogs) do
+            print("  " .. timestamp)
+        end
+        print("AutoPotionPlus: Use /appshowlog TIMESTAMP to view a specific log")
+        print("AutoPotionPlus: Use /appexport TIMESTAMP to export a log for copying")
+    else
+        -- Show specific log
+        if AutoPotionPlusDebugLogs[msg] then
+            print("AutoPotionPlus: Debug log for " .. msg .. ":")
+            print(AutoPotionPlusDebugLogs[msg])
+        else
+            print("AutoPotionPlus: Debug log not found for timestamp: " .. msg)
+        end
+    end
+end
+
+-- Add command to clear saved logs
+SLASH_AUTOPOTIONCLEARLOGS1 = "/appclearlogs"
+SlashCmdList["AUTOPOTIONCLEARLOGS"] = function()
+    AutoPotionPlusDebugLogs = {}
+    print("AutoPotionPlus: All saved debug logs cleared.")
+end
+
+-- Add separate command to just save without clearing
+SLASH_AUTOPOTIONSAVELOG1 = "/appsave"
+SlashCmdList["AUTOPOTIONSAVELOG"] = function()
+    SaveDebugLogToSavedVariables()
+end
+
+-- Add command to export logs to chat in a copyable format
+SLASH_AUTOPOTIONEXPORTLOG1 = "/appexport"
+SlashCmdList["AUTOPOTIONEXPORTLOG"] = function(msg)
+    if not AutoPotionPlusDebugLogs then
+        print("AutoPotionPlus: No saved debug logs found.")
+        return
+    end
+    
+    if msg == "" then
+        -- Show list of available logs
+        print("AutoPotionPlus: Available debug logs:")
+        for timestamp in pairs(AutoPotionPlusDebugLogs) do
+            print("  " .. timestamp)
+        end
+        print("AutoPotionPlus: Use /appexport TIMESTAMP to export a specific log")
+    else
+        -- Export specific log
+        if AutoPotionPlusDebugLogs[msg] then
+            print("AutoPotionPlus: === EXPORTING DEBUG LOG ===")
+            print("Timestamp: " .. msg)
+            print("=== START LOG ===")
+            print(AutoPotionPlusDebugLogs[msg])
+            print("=== END LOG ===")
+            print("AutoPotionPlus: Copy the log above and paste it into a text file")
+        else
+            print("AutoPotionPlus: Debug log not found for timestamp: " .. msg)
+        end
+    end
+end
+
+-- Add command to show SavedVariables location
+SLASH_AUTOPOTIONLOCATION1 = "/applocation"
+SlashCmdList["AUTOPOTIONLOCATION"] = function()
+    local charName = UnitName("player")
+    local realmName = GetRealmName()
+    local accountName = GetRealmName() -- This might not work in Classic, but worth trying
+    
+    print("AutoPotionPlus: SavedVariables location:")
+    print("World of Warcraft\\_classic_era_\\WTF\\Account\\[AccountName]\\[Realm]\\[Character]\\SavedVariables\\AutoPotionPlus.lua")
+    print("Character: " .. charName)
+    print("Realm: " .. realmName)
+    print("AutoPotionPlus: Use /appexport TIMESTAMP to get logs in a copyable format")
+end
+
+-- Helper functions and data management functions
 local function GetCharacterKey()
     local name = UnitName("player")
     local realm = GetRealmName()
     return name .. "-" .. realm
 end
 
--- First, define the helper functions and data management functions
 local function SaveItemLists()
     local charKey = GetCharacterKey()
     if not AutoPotionPlusDB then
@@ -445,20 +606,367 @@ local function InitializeSettings()
     end
 end
 
+-- Function to get item level (quality)
+local function GetItemLevel(itemId)
+    local itemName, _, _, itemLevel = GetItemInfo(itemId)
+    if itemName then
+        return itemLevel or 0
+    end
+    return 0
+end
+
 local function FindFirstItem(itemList, useLowest)
-    if useLowest then
-        for i = #itemList, 1, -1 do
-            if GetItemCount(itemList[i]) > 0 then
-                return itemList[i]
+    local availableItems = {}
+    
+    -- Collect all available items with their counts and levels
+    for i, itemId in ipairs(itemList) do
+        local count = GetItemCount(itemId)
+        if count > 0 then
+            local itemName = GetItemInfo(itemId)
+            local itemLevel = GetItemLevel(itemId)
+            
+            -- Handle nil item names (uncached items)
+            if not itemName then
+                itemName = "Item " .. itemId
+            end
+            
+            table.insert(availableItems, {
+                id = itemId, 
+                count = count, 
+                index = i, 
+                name = itemName,
+                level = itemLevel
+            })
+        end
+    end
+    
+    if #availableItems == 0 then
+        return nil
+    end
+    
+    -- Sort by level first (respecting useLowest setting)
+    table.sort(availableItems, function(a, b)
+        if a.level == b.level then
+            -- Same level, use original order (don't consider amount)
+            if useLowest then
+                return a.index > b.index
+            else
+                return a.index < b.index
+            end
+        else
+            -- Different levels, sort by level
+            if useLowest then
+                return a.level < b.level  -- Lower level first
+            else
+                return a.level > b.level  -- Higher level first
             end
         end
-    else
-        for i = 1, #itemList do
-            if GetItemCount(itemList[i]) > 0 then
-                return itemList[i]
+    end)
+    
+    -- Return the first item after sorting
+    return availableItems[1].id
+end
+
+-- New function to find items with least amount first when levels are same
+local function FindFirstItemByAmount(itemList, useLowest)
+    local availableItems = {}
+    
+    LogDebug("=== Starting FindFirstItemByAmount ===")
+    LogDebug("useLowest: " .. tostring(useLowest))
+    
+    -- Collect all available items with their counts and levels
+    for i, itemId in ipairs(itemList) do
+        local count = GetItemCount(itemId)
+        if count > 0 then
+            local itemName = GetItemInfo(itemId)
+            local itemLevel = GetItemLevel(itemId)
+            
+            -- Handle nil item names (uncached items)
+            if not itemName then
+                itemName = "Item " .. itemId
+                LogDebug("Item " .. itemId .. " not cached yet, using fallback name")
+            end
+            
+            table.insert(availableItems, {
+                id = itemId, 
+                count = count, 
+                index = i, 
+                name = itemName,
+                level = itemLevel
+            })
+            LogDebug("Available: " .. itemName .. " (Level " .. itemLevel .. ", x" .. count .. ", index " .. i .. ")")
+        end
+    end
+    
+    if #availableItems == 0 then
+        LogDebug("No available items found")
+        return nil
+    end
+    
+    -- First, sort by level (respecting useLowest setting)
+    table.sort(availableItems, function(a, b)
+        if a.level == b.level then
+            -- Same level, use original order
+            if useLowest then
+                return a.index > b.index
+            else
+                return a.index < b.index
+            end
+        else
+            -- Different levels, sort by level
+            if useLowest then
+                return a.level < b.level  -- Lower level first
+            else
+                return a.level > b.level  -- Higher level first
+            end
+        end
+    end)
+    
+    LogDebug("After level sorting:")
+    for i, item in ipairs(availableItems) do
+        LogDebug("  " .. i .. ". " .. item.name .. " (Level " .. item.level .. ", x" .. item.count .. ")")
+    end
+    
+    -- Find the best level items (first item after sorting)
+    local bestLevel = availableItems[1].level
+    local sameLevelItems = {}
+    
+    for _, item in ipairs(availableItems) do
+        if item.level == bestLevel then
+            table.insert(sameLevelItems, item)
+        else
+            break -- Stop when we hit a different level
+        end
+    end
+    
+    LogDebug("Items at level " .. bestLevel .. ":")
+    for i, item in ipairs(sameLevelItems) do
+        LogDebug("  " .. i .. ". " .. item.name .. " (x" .. item.count .. ")")
+    end
+    
+    -- If we have multiple items at the same level, sort by amount
+    if #sameLevelItems > 1 then
+        table.sort(sameLevelItems, function(a, b)
+            if a.count == b.count then
+                return a.index < b.index  -- If same amount, use original order
+            else
+                return a.count < b.count  -- Sort by amount (ascending)
+            end
+        end)
+        
+        LogDebug("After amount sorting within level " .. bestLevel .. ":")
+        for i, item in ipairs(sameLevelItems) do
+            LogDebug("  " .. i .. ". " .. item.name .. " (x" .. item.count .. ")")
+        end
+    end
+    
+    local selectedItem = sameLevelItems[1]
+    LogDebug("Selected: " .. selectedItem.name .. " (Level " .. selectedItem.level .. ", x" .. selectedItem.count .. ")")
+    LogDebug("=== End FindFirstItemByAmount ===")
+    
+    return selectedItem.id
+end
+
+-- New function to find items with most amount first when levels are same (for when amount priority is disabled)
+local function FindFirstItemByAmountReverse(itemList, useLowest)
+    local availableItems = {}
+    
+    LogDebug("=== Starting FindFirstItemByAmountReverse ===")
+    LogDebug("useLowest: " .. tostring(useLowest))
+    
+    -- Collect all available items with their counts and levels
+    for i, itemId in ipairs(itemList) do
+        local count = GetItemCount(itemId)
+        if count > 0 then
+            local itemName = GetItemInfo(itemId)
+            local itemLevel = GetItemLevel(itemId)
+            
+            -- Handle nil item names (uncached items)
+            if not itemName then
+                itemName = "Item " .. itemId
+                LogDebug("Item " .. itemId .. " not cached yet, using fallback name")
+            end
+            
+            table.insert(availableItems, {
+                id = itemId, 
+                count = count, 
+                index = i, 
+                name = itemName,
+                level = itemLevel
+            })
+            LogDebug("Available: " .. itemName .. " (Level " .. itemLevel .. ", x" .. count .. ", index " .. i .. ")")
+        end
+    end
+    
+    if #availableItems == 0 then
+        LogDebug("No available items found")
+        return nil
+    end
+    
+    -- First, sort by level (respecting useLowest setting)
+    table.sort(availableItems, function(a, b)
+        if a.level == b.level then
+            -- Same level, use original order
+            if useLowest then
+                return a.index > b.index
+            else
+                return a.index < b.index
+            end
+        else
+            -- Different levels, sort by level
+            if useLowest then
+                return a.level < b.level  -- Lower level first
+            else
+                return a.level > b.level  -- Higher level first
+            end
+        end
+    end)
+    
+    LogDebug("After level sorting:")
+    for i, item in ipairs(availableItems) do
+        LogDebug("  " .. i .. ". " .. item.name .. " (Level " .. item.level .. ", x" .. item.count .. ")")
+    end
+    
+    -- Find the best level items (first item after sorting)
+    local bestLevel = availableItems[1].level
+    local sameLevelItems = {}
+    
+    for _, item in ipairs(availableItems) do
+        if item.level == bestLevel then
+            table.insert(sameLevelItems, item)
+        else
+            break -- Stop when we hit a different level
+        end
+    end
+    
+    LogDebug("Items at level " .. bestLevel .. ":")
+    for i, item in ipairs(sameLevelItems) do
+        LogDebug("  " .. i .. ". " .. item.name .. " (x" .. item.count .. ")")
+    end
+    
+    -- If we have multiple items at the same level, sort by amount (MOST first)
+    if #sameLevelItems > 1 then
+        table.sort(sameLevelItems, function(a, b)
+            if a.count == b.count then
+                return a.index < b.index  -- If same amount, use original order
+            else
+                return a.count > b.count  -- Sort by amount (descending - most first)
+            end
+        end)
+        
+        LogDebug("After amount sorting within level " .. bestLevel .. " (most first):")
+        for i, item in ipairs(sameLevelItems) do
+            LogDebug("  " .. i .. ". " .. item.name .. " (x" .. item.count .. ")")
+        end
+    end
+    
+    local selectedItem = sameLevelItems[1]
+    LogDebug("Selected: " .. selectedItem.name .. " (Level " .. selectedItem.level .. ", x" .. selectedItem.count .. ")")
+    LogDebug("=== End FindFirstItemByAmountReverse ===")
+    
+    return selectedItem.id
+end
+
+-- New function to find conjured items first
+local function FindConjuredItemFirst(itemList, useLowest)
+    local conjuredItems = {}
+    local regularItems = {}
+    
+    LogDebug("=== Starting FindConjuredItemFirst ===")
+    LogDebug("useLowest: " .. tostring(useLowest))
+    
+    -- Separate conjured and regular items
+    for i, itemId in ipairs(itemList) do
+        local count = GetItemCount(itemId)
+        if count > 0 then
+            local itemName = GetItemInfo(itemId)
+            local itemLevel = GetItemLevel(itemId)
+            
+            -- Handle nil item names (uncached items)
+            if not itemName then
+                itemName = "Item " .. itemId
+                LogDebug("Item " .. itemId .. " not cached yet, using fallback name")
+            end
+            
+            if itemName then
+                -- More precise conjured item detection
+                local isConjured = string.find(string.lower(itemName), "^conjured ")
+                if isConjured then
+                    table.insert(conjuredItems, {id = itemId, count = count, index = i, name = itemName, level = itemLevel})
+                    LogDebug("Conjured: " .. itemName .. " (Level " .. itemLevel .. ", x" .. count .. ")")
+                else
+                    table.insert(regularItems, {id = itemId, count = count, index = i, name = itemName, level = itemLevel})
+                    LogDebug("Regular: " .. itemName .. " (Level " .. itemLevel .. ", x" .. count .. ")")
+                end
             end
         end
     end
+    
+    -- Sort conjured items by level first, then by amount
+    table.sort(conjuredItems, function(a, b)
+        if a.level == b.level then
+            if a.count == b.count then
+                if useLowest then
+                    return a.index > b.index
+                else
+                    return a.index < b.index
+                end
+            else
+                return a.count < b.count  -- Sort by amount (ascending)
+            end
+        else
+            if useLowest then
+                return a.level < b.level  -- Lower level first
+            else
+                return a.level > b.level  -- Higher level first
+            end
+        end
+    end)
+    
+    -- Sort regular items by level first, then by amount
+    table.sort(regularItems, function(a, b)
+        if a.level == b.level then
+            if a.count == b.count then
+                if useLowest then
+                    return a.index > b.index
+                else
+                    return a.index < b.index
+                end
+            else
+                return a.count < b.count  -- Sort by amount (ascending)
+            end
+        else
+            if useLowest then
+                return a.level < b.level  -- Lower level first
+            else
+                return a.level > b.level  -- Higher level first
+            end
+        end
+    end)
+    
+    LogDebug("Conjured items after sorting:")
+    for i, item in ipairs(conjuredItems) do
+        LogDebug("  " .. i .. ". " .. item.name .. " (Level " .. item.level .. ", x" .. item.count .. ")")
+    end
+    
+    LogDebug("Regular items after sorting:")
+    for i, item in ipairs(regularItems) do
+        LogDebug("  " .. i .. ". " .. item.name .. " (Level " .. item.level .. ", x" .. item.count .. ")")
+    end
+    
+    -- Return conjured item first if available, otherwise regular item
+    if #conjuredItems > 0 then
+        LogDebug("Selected conjured: " .. conjuredItems[1].name .. " (Level " .. conjuredItems[1].level .. ", x" .. conjuredItems[1].count .. ")")
+        LogDebug("=== End FindConjuredItemFirst ===")
+        return conjuredItems[1].id
+    elseif #regularItems > 0 then
+        LogDebug("Selected regular: " .. regularItems[1].name .. " (Level " .. regularItems[1].level .. ", x" .. regularItems[1].count .. ")")
+        LogDebug("=== End FindConjuredItemFirst ===")
+        return regularItems[1].id
+    end
+    
+    LogDebug("No items available")
+    LogDebug("=== End FindConjuredItemFirst ===")
     return nil
 end
 
@@ -473,12 +981,21 @@ local function UpdateMacro()
         AutoPotionPlusDB[charKey] = CopyTable(defaults)
     end
 
-    -- Build lists of available items
-    local bandageItem = FindFirstItem(bandages, AutoPotionPlusDB[charKey].useLowestBandage)
-    local manaItem = FindFirstItem(manaPotions, AutoPotionPlusDB[charKey].useLowestMana)
+    -- Build lists of available items using new logic
+    local bandageItem
+    local manaItem
+    local healItem
+    
+    -- Use appropriate item finding function based on settings
+    if AutoPotionPlusDB[charKey].useAmountPriority then
+        bandageItem = FindFirstItemByAmount(bandages, AutoPotionPlusDB[charKey].useLowestBandage)
+        manaItem = FindFirstItemByAmount(manaPotions, AutoPotionPlusDB[charKey].useLowestMana)
+    else
+        bandageItem = FindFirstItem(bandages, AutoPotionPlusDB[charKey].useLowestBandage)
+        manaItem = FindFirstItem(manaPotions, AutoPotionPlusDB[charKey].useLowestMana)
+    end
     
     -- Changed healthstone logic
-    local healItem
     if AutoPotionPlusDB[charKey].useHealthstoneFirst then
         -- If checkbox is checked, try healthstone first, then fallback to potion
         healItem = FindFirstItem(healthstones, false) or FindFirstItem(potions, AutoPotionPlusDB[charKey].useLowestHealing)
@@ -487,10 +1004,10 @@ local function UpdateMacro()
         healItem = FindFirstItem(potions, AutoPotionPlusDB[charKey].useLowestHealing) or FindFirstItem(healthstones, false)
     end
     
-    -- Set defaults for other categories if empty
-    local bandagesList = bandageItem and "item:" .. bandageItem or "item:118" -- Default to Minor Healing Potion
-    local manaList = manaItem and "item:" .. manaItem or "item:118"
-    local healList = healItem and "item:" .. healItem or "item:118"
+    -- Set appropriate defaults for each category
+    local bandagesList = bandageItem and "item:" .. bandageItem or "item:1251" -- Default to Linen Bandage
+    local manaList = manaItem and "item:" .. manaItem or "item:2455" -- Default to Minor Mana Potion
+    local healList = healItem and "item:" .. healItem or "item:118" -- Default to Minor Healing Potion
 
     -- Create macro with conditionals
     local macroText = string.format(
@@ -516,12 +1033,29 @@ local function UpdateFoodMacro()
         AutoPotionPlusDB[charKey] = CopyTable(defaults)
     end
 
-    -- Get items from the current lists
-    local drinkItem = FindFirstItem(categoryToList["Drinks"], AutoPotionPlusDB[charKey].useLowestDrink)
-    local foodItem = FindFirstItem(categoryToList["Regular Foods"], AutoPotionPlusDB[charKey].useLowestFood)
-    local buffFoodItem = FindFirstItem(categoryToList["Buff Foods"], AutoPotionPlusDB[charKey].useLowestFood)
+    -- Get items from the current lists using appropriate logic
+    local drinkItem
+    local foodItem
+    local buffFoodItem
     
-    -- Set defaults if empty
+    if AutoPotionPlusDB[charKey].preferConjured then
+        -- Use conjured item preference
+        drinkItem = FindConjuredItemFirst(categoryToList["Drinks"], AutoPotionPlusDB[charKey].useLowestDrink)
+        foodItem = FindConjuredItemFirst(categoryToList["Regular Foods"], AutoPotionPlusDB[charKey].useLowestFood)
+        buffFoodItem = FindConjuredItemFirst(categoryToList["Buff Foods"], AutoPotionPlusDB[charKey].useLowestFood)
+    elseif AutoPotionPlusDB[charKey].useAmountPriority then
+        -- Use amount priority (least amount first)
+        drinkItem = FindFirstItemByAmount(categoryToList["Drinks"], AutoPotionPlusDB[charKey].useLowestDrink)
+        foodItem = FindFirstItemByAmount(categoryToList["Regular Foods"], AutoPotionPlusDB[charKey].useLowestFood)
+        buffFoodItem = FindFirstItemByAmount(categoryToList["Buff Foods"], AutoPotionPlusDB[charKey].useLowestFood)
+    else
+        -- Use reverse amount priority (most amount first)
+        drinkItem = FindFirstItemByAmountReverse(categoryToList["Drinks"], AutoPotionPlusDB[charKey].useLowestDrink)
+        foodItem = FindFirstItemByAmountReverse(categoryToList["Regular Foods"], AutoPotionPlusDB[charKey].useLowestFood)
+        buffFoodItem = FindFirstItemByAmountReverse(categoryToList["Buff Foods"], AutoPotionPlusDB[charKey].useLowestFood)
+    end
+    
+    -- Set appropriate defaults for each category
     local drinkList = drinkItem and "item:" .. drinkItem or "item:159" -- Default to Spring Water
     local foodList = foodItem and "item:" .. foodItem or "item:4536" -- Default to Apple
     local buffFoodList = buffFoodItem and "item:" .. buffFoodItem or foodList
@@ -565,12 +1099,10 @@ local function UpdateItemListDisplay(category, forceFull)
     if not frame then
         frameRetryCount = frameRetryCount + 1
         if frameRetryCount <= MAX_RETRIES then
-            print("AutoPotionPlus: Warning - Item list scroll frame not yet available, retry " .. frameRetryCount .. "/" .. MAX_RETRIES)
             C_Timer.After(1, function() 
                 UpdateItemListDisplay(category)
             end)
         else
-            print("AutoPotionPlus: Error - Could not find item list frame after " .. MAX_RETRIES .. " attempts")
             -- Reset retry count for next time
             frameRetryCount = 0
         end
@@ -954,23 +1486,17 @@ end
 local function HandleItemDrop()
     local cursorType, id, _, link = GetCursorInfo()
     
-    -- Only process and show messages if there's an actual item
+            -- Only process if there's an actual item
     if cursorType == "item" and id then
-        print("AutoPotionPlus: Attempting to handle item drop...")
-        
         -- Safety check
         if not currentSelectedCategory then
-            print("AutoPotionPlus: Error - No category selected")
             ClearCursor()
             return
         end
         
-        print("AutoPotionPlus: Detected item drop, ID: " .. id)
-        
         -- Get character key locally to fix the nil error
         local charKeyLocal = GetCharacterKey()
         if not charKeyLocal then
-            print("AutoPotionPlus: Error - Unable to get character key")
             ClearCursor()
             return
         end
@@ -986,7 +1512,6 @@ local function HandleItemDrop()
             -- Check if item already exists in list
             for _, existingId in ipairs(list) do
                 if existingId == id then
-                    print("AutoPotionPlus: Item already exists in the list")
                     ClearCursor()
                     return
                 end
@@ -999,15 +1524,8 @@ local function HandleItemDrop()
             
             -- Add item to list
             table.insert(list, id)
-            print("AutoPotionPlus: Added item to " .. currentSelectedCategory)
             SaveItemLists()
-            
-            -- Safety check for UpdateItemListDisplay
-            if type(UpdateItemListDisplay) == "function" then
-                UpdateItemListDisplay(currentSelectedCategory, true)
-            else
-                print("AutoPotionPlus: Error - UpdateItemListDisplay function not found")
-            end
+            UpdateItemListDisplay(currentSelectedCategory, true)
             
             -- Always update both macros when food-related items are changed
             if currentSelectedCategory == "Buff Foods" or 
@@ -1016,8 +1534,6 @@ local function HandleItemDrop()
                 UpdateFoodMacro()
             end
             UpdateMacro()
-        else
-            print("AutoPotionPlus: No list found for category: " .. (currentSelectedCategory or "nil"))
         end
         ClearCursor()
     end
@@ -1028,6 +1544,8 @@ local function InitializeUI()
     local charKey = GetCharacterKey()
     -- Set up checkbox labels
     _G[AutoPotionPlusFrame:GetName().."WarriorModeCheckText"]:SetText("Warrior Mode (Swap food and drink)")
+    _G[AutoPotionPlusFrame:GetName().."AmountPrioritySectionLowestCheckText"]:SetText("Choose least amount first")
+    _G[AutoPotionPlusFrame:GetName().."ConjuredPreferenceSectionLowestCheckText"]:SetText("Prefer conjured items")
 
     -- Set up checkbox states
     AutoPotionPlusFrameHealingSectionLowestCheck:SetChecked(AutoPotionPlusDB[charKey].useLowestHealing)
@@ -1037,6 +1555,8 @@ local function InitializeUI()
     AutoPotionPlusFrameBandageSectionLowestCheck:SetChecked(AutoPotionPlusDB[charKey].useLowestBandage)
     AutoPotionPlusFrameWarriorModeCheck:SetChecked(AutoPotionPlusDB[charKey].warriorMode)
     AutoPotionPlusFrameHealthstoneSectionLowestCheck:SetChecked(AutoPotionPlusDB[charKey].useHealthstoneFirst)
+    AutoPotionPlusFrameAmountPrioritySectionLowestCheck:SetChecked(AutoPotionPlusDB[charKey].useAmountPriority)
+    AutoPotionPlusFrameConjuredPreferenceSectionLowestCheck:SetChecked(AutoPotionPlusDB[charKey].preferConjured)
 
     -- Update the healthstone checkbox label
     _G[AutoPotionPlusFrame:GetName().."HealthstoneSectionLowestCheckText"]:SetText("Healthstone priority")
@@ -1076,6 +1596,17 @@ local function InitializeUI()
         AutoPotionPlusDB[charKey].useHealthstoneFirst = self:GetChecked()
         UpdateMacro()
     end)
+    
+    AutoPotionPlusFrameAmountPrioritySectionLowestCheck:SetScript("OnClick", function(self)
+        AutoPotionPlusDB[charKey].useAmountPriority = self:GetChecked()
+        UpdateMacro()
+        UpdateFoodMacro()
+    end)
+    
+    AutoPotionPlusFrameConjuredPreferenceSectionLowestCheck:SetScript("OnClick", function(self)
+        AutoPotionPlusDB[charKey].preferConjured = self:GetChecked()
+        UpdateFoodMacro()
+    end)
 
     -- Replace dropdown initialization with category list
     InitializeCategoryList()
@@ -1083,7 +1614,6 @@ local function InitializeUI()
     -- Set up drop zone
     local dropZone = AutoPotionPlusItemListManagerDropZone
     if not dropZone then
-        print("AutoPotionPlus: Error - Could not find drop zone frame")
         return
     end
     
@@ -1276,6 +1806,111 @@ local function CreateMinimapButton()
     return button
 end
 
+-- Add debug log UI functions
+local function ShowDebugLogUI()
+    local frame = AutoPotionPlusDebugLogFrame
+    if not frame then
+        return
+    end
+    
+    -- Get current debug log
+    local currentLog = table.concat(debugLog, "\n")
+    if currentLog == "" then
+        currentLog = "No current debug log available.\n\nUse the addon first to generate debug information.\n\nTry checking/unchecking settings to generate debug logs."
+    end
+    
+    -- Try different possible edit box names
+    local editBox = _G["AutoPotionPlusDebugLogFrameLogEditBox"]
+    if not editBox then
+        editBox = _G["AutoPotionPlusDebugLogFrameLogScrollLogEditBox"]
+    end
+    if not editBox then
+        editBox = frame.LogEditBox
+    end
+    if not editBox then
+        -- Try to find any EditBox in the frame
+        for i = 1, 10 do
+            local child = _G["AutoPotionPlusDebugLogFrameLogEditBox" .. i]
+            if child and child:GetObjectType() == "EditBox" then
+                editBox = child
+                break
+            end
+        end
+    end
+    
+    if editBox then
+        -- Store the edit box reference globally
+        debugLogEditBox = editBox
+        editBox:SetText(currentLog)
+        editBox:HighlightText(0, 0) -- Select all text
+    end
+    
+    frame:Show()
+end
+
+local function InitializeDebugLogUI()
+    local frame = AutoPotionPlusDebugLogFrame
+    if not frame then
+        return
+    end
+    
+    -- Set up close button
+    local closeButton = _G["AutoPotionPlusDebugLogFrameCloseButton"]
+    if closeButton then
+        closeButton:SetScript("OnClick", function()
+            frame:Hide()
+        end)
+    end
+    
+    -- Set up copy button
+    local copyButton = _G["AutoPotionPlusDebugLogFrameCopyButton"]
+    if copyButton then
+        copyButton:SetScript("OnClick", function()
+            if debugLogEditBox then
+                debugLogEditBox:HighlightText(0, 0) -- Select all text
+            end
+        end)
+    end
+    
+    -- Set up clear button
+    local clearButton = _G["AutoPotionPlusDebugLogFrameClearButton"]
+    if clearButton then
+        clearButton:SetScript("OnClick", function()
+            debugLog = {}
+            if debugLogEditBox then
+                debugLogEditBox:SetText("Debug log cleared.")
+            end
+        end)
+    end
+    
+    -- Set up refresh button
+    local refreshButton = _G["AutoPotionPlusDebugLogFrameRefreshButton"]
+    if refreshButton then
+        refreshButton:SetScript("OnClick", function()
+            -- Get current debug log
+            local currentLog = table.concat(debugLog, "\n")
+            if currentLog == "" then
+                currentLog = "No current debug log available.\n\nUse the addon first to generate debug information.\n\nTry checking/unchecking settings to generate debug logs."
+            end
+            
+            -- Update the edit box
+            if debugLogEditBox then
+                debugLogEditBox:SetText(currentLog)
+                debugLogEditBox:HighlightText(0, 0) -- Select all text
+            end
+        end)
+    end
+    
+    -- Make edit box read-only but selectable
+    local editBox = _G["AutoPotionPlusDebugLogFrameLogEditBox"]
+    if editBox then
+        debugLogEditBox = editBox -- Store reference during initialization too
+        editBox:SetScript("OnEditFocusGained", function(self)
+            self:HighlightText(0, 0)
+        end)
+    end
+end
+
 -- Modify the PLAYER_LOGIN event handler to create the minimap button
 f:SetScript("OnEvent", function(self, event)
     if event == "PLAYER_LOGIN" then
@@ -1283,10 +1918,12 @@ f:SetScript("OnEvent", function(self, event)
         CreateMacroIfNeeded()
         CreateFoodMacroIfNeeded()
         InitializeUI()
+        InitializeDebugLogUI() -- Initialize debug log UI
         -- Create the minimap button after a short delay to ensure everything is loaded
         C_Timer.After(1, function()
             CreateMinimapButton()
         end)
+        print("AutoPotionPlus loaded! Use /appdebugui to open the debug info")
     end
     UpdateMacro()
     UpdateFoodMacro()
@@ -1431,55 +2068,8 @@ AutoPotionPlusItemListManagerResetButton:SetScript("OnClick", function()
     ResetAllSettings()
 end)
 
--- Functions to move items in the list - make them global for XML
-function MoveItemUp()
-    local list = categoryToList[currentSelectedCategory]
-    
-    if selectedItemIndex and selectedItemIndex > 1 then
-        local itemId = list[selectedItemIndex]
-        -- Remove from current position
-        table.remove(list, selectedItemIndex)
-        -- Insert at new position
-        table.insert(list, selectedItemIndex - 1, itemId)
-        -- Update selection index
-        selectedItemIndex = selectedItemIndex - 1
-        
-        -- Update display and save changes
-        SaveItemLists()
-        UpdateItemListDisplay(currentSelectedCategory, true)
-        
-        -- Update macros if needed
-        if currentSelectedCategory == "Buff Foods" or 
-           currentSelectedCategory == "Regular Foods" or 
-           currentSelectedCategory == "Drinks" then
-            UpdateFoodMacro()
-        end
-        UpdateMacro()
-    end
-end
-
-function MoveItemDown()
-    local list = categoryToList[currentSelectedCategory]
-    
-    if selectedItemIndex and selectedItemIndex < #list then
-        local itemId = list[selectedItemIndex]
-        -- Remove from current position
-        table.remove(list, selectedItemIndex)
-        -- Insert at new position
-        table.insert(list, selectedItemIndex + 1, itemId)
-        -- Update selection index
-        selectedItemIndex = selectedItemIndex + 1
-        
-        -- Update display and save changes
-        SaveItemLists()
-        UpdateItemListDisplay(currentSelectedCategory, true)
-        
-        -- Update macros if needed
-        if currentSelectedCategory == "Buff Foods" or 
-           currentSelectedCategory == "Regular Foods" or 
-           currentSelectedCategory == "Drinks" then
-            UpdateFoodMacro()
-        end
-        UpdateMacro()
-    end
+-- Add command to open debug log UI
+SLASH_AUTOPOTIONDEBUGUI1 = "/appdebugui"
+SlashCmdList["AUTOPOTIONDEBUGUI"] = function()
+    ShowDebugLogUI()
 end

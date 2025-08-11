@@ -1,6 +1,6 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <Frame name="AutoPotionPlusFrame" parent="UIParent" movable="true" enableMouse="true" hidden="true" inherits="BackdropTemplate">
-        <Size x="400" y="250"/>
+        <Size x="400" y="350"/>
         <Anchors>
             <Anchor point="CENTER">
                 <Offset x="0" y="0"/>
@@ -233,6 +233,36 @@
                 </Frames>
             </Frame>
 
+            <!-- Amount Priority Checkbox -->
+            <Frame name="$parentAmountPrioritySection">
+                <Size x="300" y="30"/>
+                <Anchors>
+                    <Anchor point="TOPLEFT" x="20" y="-240"/>
+                </Anchors>
+                <Frames>
+                    <CheckButton name="$parentLowestCheck" inherits="UICheckButtonTemplate">
+                        <Anchors>
+                            <Anchor point="LEFT" x="20" y="0"/>
+                        </Anchors>
+                    </CheckButton>
+                </Frames>
+            </Frame>
+
+            <!-- Conjured Preference Checkbox -->
+            <Frame name="$parentConjuredPreferenceSection">
+                <Size x="300" y="30"/>
+                <Anchors>
+                    <Anchor point="TOPLEFT" x="20" y="-270"/>
+                </Anchors>
+                <Frames>
+                    <CheckButton name="$parentLowestCheck" inherits="UICheckButtonTemplate">
+                        <Anchors>
+                            <Anchor point="LEFT" x="20" y="0"/>
+                        </Anchors>
+                    </CheckButton>
+                </Frames>
+            </Frame>
+
             <!-- Add this button to the main frame -->
             <Button name="$parentManageItemsButton" inherits="UIPanelButtonTemplate" text="Manage Items">
                 <Size x="100" y="22"/>
@@ -377,6 +407,94 @@
                         ResetAllSettings()
                     </OnClick>
                 </Scripts>
+            </Button>
+        </Frames>
+        <Scripts>
+            <OnMouseDown>
+                self:StartMoving()
+            </OnMouseDown>
+            <OnMouseUp>
+                self:StopMovingOrSizing()
+            </OnMouseUp>
+        </Scripts>
+    </Frame>
+
+    <!-- Add the Debug Log UI as a separate top-level frame -->
+    <Frame name="AutoPotionPlusDebugLogFrame" parent="UIParent" movable="true" enableMouse="true" hidden="true" inherits="BackdropTemplate">
+        <Size x="600" y="400"/>
+        <Anchors>
+            <Anchor point="CENTER"/>
+        </Anchors>
+        <KeyValues>
+            <KeyValue key="backdropInfo" value="BACKDROP_DIALOG_32_32" type="global"/>
+        </KeyValues>
+        <Layers>
+            <Layer level="BACKGROUND">
+                <Texture>
+                    <Anchors>
+                        <Anchor point="TOPLEFT" x="8" y="-8"/>
+                        <Anchor point="BOTTOMRIGHT" x="-8" y="8"/>
+                    </Anchors>
+                    <Color r="0" g="0" b="0" a="0.8"/>
+                </Texture>
+            </Layer>
+            <Layer level="ARTWORK">
+                <Texture file="Interface\DialogFrame\UI-DialogBox-Header">
+                    <Size x="320" y="64"/>
+                    <Anchors>
+                        <Anchor point="TOP" x="0" y="12"/>
+                    </Anchors>
+                </Texture>
+                <FontString name="$parentTitle" inherits="GameFontNormalLarge" text="Debug Log Viewer">
+                    <Anchors>
+                        <Anchor point="TOP" y="0"/>
+                    </Anchors>
+                    <Color r="1" g="0.82" b="0"/>
+                </FontString>
+            </Layer>
+        </Layers>
+        <Frames>
+            <Button name="$parentCloseButton" inherits="UIPanelCloseButton">
+                <Anchors>
+                    <Anchor point="TOPRIGHT" x="-5" y="-5"/>
+                </Anchors>
+            </Button>
+            
+            <ScrollFrame name="$parentLogScroll" inherits="UIPanelScrollFrameTemplate">
+                <Size x="580" y="320"/>
+                <Anchors>
+                    <Anchor point="TOPLEFT" x="10" y="-40"/>
+                </Anchors>
+                <ScrollChild>
+                    <EditBox name="$parentLogEditBox" multiLine="true" autoFocus="false">
+                        <Size x="580" y="320"/>
+                        <Anchors>
+                            <Anchor point="TOPLEFT"/>
+                        </Anchors>
+                        <FontString inherits="GameFontHighlight"/>
+                    </EditBox>
+                </ScrollChild>
+            </ScrollFrame>
+            
+            <Button name="$parentCopyButton" inherits="UIPanelButtonTemplate" text="Copy to Clipboard">
+                <Size x="120" y="22"/>
+                <Anchors>
+                    <Anchor point="BOTTOMLEFT" x="10" y="10"/>
+                </Anchors>
+            </Button>
+            
+            <Button name="$parentClearButton" inherits="UIPanelButtonTemplate" text="Clear Log">
+                <Size x="100" y="22"/>
+                <Anchors>
+                    <Anchor point="BOTTOMLEFT" x="140" y="10"/>
+                </Anchors>
+            </Button>
+            
+            <Button name="$parentRefreshButton" inherits="UIPanelButtonTemplate" text="Refresh">
+                <Size x="80" y="22"/>
+                <Anchors>
+                    <Anchor point="BOTTOMLEFT" x="250" y="10"/>
+                </Anchors>
             </Button>
         </Frames>
         <Scripts>
