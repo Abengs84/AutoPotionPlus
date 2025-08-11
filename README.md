@@ -1,6 +1,6 @@
 # AutoPotionPlus
 
-A World of Warcraft Classic addon for automated potion, food, and bandage management with enhanced UI and quality-of-life features.
+A World of Warcraft Classic addon for automated potion, food, and bandage management.
 
 ## Features
 
@@ -29,7 +29,7 @@ A World of Warcraft Classic addon for automated potion, food, and bandage manage
 
 1. **Basic Usage**: The addon creates two macros:
    - `/cast AutoPotionPlus` - For healing, mana, bandages
-   - `/cast AutoFoodPlus` - For food and drinks
+   - `/cast AutoFoodPlus` - For food and drinks and buff food
 
 2. **Modifiers**:
    - No modifier: Main item (healing potion/drink)
@@ -53,4 +53,5 @@ A World of Warcraft Classic addon for automated potion, food, and bandage manage
 ## Credits
 
 Created by Uthenaria
+
 Idea from Auto Potion by ollidiemaus
