@@ -2,7 +2,7 @@
 ## Title: AutoPotionPlus
 ## Notes: An improved AutoPotion addon with modifier support and UI.
 ## Author: Uthenaria
-## Version: 1.0
+## Version: 1.0.1
 ## SavedVariables: AutoPotionPlusDB
 ## SavedBindings: 1
 
