@@ -748,9 +748,29 @@ local function FindFirstItemByAmount(itemList, useLowest)
     if #sameLevelItems > 1 then
         table.sort(sameLevelItems, function(a, b)
             if a.count == b.count then
-                return a.index < b.index  -- If same amount, use original order
+                -- If same amount, respect the useLowest setting for original order
+                if useLowest then
+                    return a.index > b.index  -- Lower index (higher quality) first when useLowest is true
+                else
+                    return a.index < b.index  -- Higher index (lower quality) first when useLowest is false
+                end
             else
-                return a.count < b.count  -- Sort by amount (ascending)
+                -- When amounts are different, still respect useLowest setting first
+                if useLowest then
+                    -- For useLowest=true, prefer higher quality (lower index) even if amount is higher
+                    if a.index ~= b.index then
+                        return a.index > b.index  -- Lower index (higher quality) first
+                    else
+                        return a.count < b.count  -- Then by amount if same quality
+                    end
+                else
+                    -- For useLowest=false, prefer lower quality (higher index) even if amount is higher
+                    if a.index ~= b.index then
+                        return a.index < b.index  -- Higher index (lower quality) first
+                    else
+                        return a.count < b.count  -- Then by amount if same quality
+                    end
+                end
             end
         end)
         
@@ -848,9 +868,29 @@ local function FindFirstItemByAmountReverse(itemList, useLowest)
     if #sameLevelItems > 1 then
         table.sort(sameLevelItems, function(a, b)
             if a.count == b.count then
-                return a.index < b.index  -- If same amount, use original order
+                -- If same amount, respect the useLowest setting for original order
+                if useLowest then
+                    return a.index > b.index  -- Lower index (higher quality) first when useLowest is true
+                else
+                    return a.index < b.index  -- Higher index (lower quality) first when useLowest is false
+                end
             else
-                return a.count > b.count  -- Sort by amount (descending - most first)
+                -- When amounts are different, still respect useLowest setting first
+                if useLowest then
+                    -- For useLowest=true, prefer higher quality (lower index) even if amount is higher
+                    if a.index ~= b.index then
+                        return a.index > b.index  -- Lower index (higher quality) first
+                    else
+                        return a.count > b.count  -- Then by amount if same quality
+                    end
+                else
+                    -- For useLowest=false, prefer lower quality (higher index) even if amount is higher
+                    if a.index ~= b.index then
+                        return a.index < b.index  -- Higher index (lower quality) first
+                    else
+                        return a.count > b.count  -- Then by amount if same quality
+                    end
+                end
             end
         end)
         
@@ -912,7 +952,22 @@ local function FindConjuredItemFirst(itemList, useLowest)
                     return a.index < b.index
                 end
             else
-                return a.count < b.count  -- Sort by amount (ascending)
+                -- When amounts are different, still respect useLowest setting first
+                if useLowest then
+                    -- For useLowest=true, prefer higher quality (lower index) even if amount is higher
+                    if a.index ~= b.index then
+                        return a.index > b.index  -- Lower index (higher quality) first
+                    else
+                        return a.count < b.count  -- Then by amount if same quality
+                    end
+                else
+                    -- For useLowest=false, prefer lower quality (higher index) even if amount is higher
+                    if a.index ~= b.index then
+                        return a.index < b.index  -- Higher index (lower quality) first
+                    else
+                        return a.count < b.count  -- Then by amount if same quality
+                    end
+                end
             end
         else
             if useLowest then
@@ -933,7 +988,22 @@ local function FindConjuredItemFirst(itemList, useLowest)
                     return a.index < b.index
                 end
             else
-                return a.count < b.count  -- Sort by amount (ascending)
+                -- When amounts are different, still respect useLowest setting first
+                if useLowest then
+                    -- For useLowest=true, prefer higher quality (lower index) even if amount is higher
+                    if a.index ~= b.index then
+                        return a.index > b.index  -- Lower index (higher quality) first
+                    else
+                        return a.count < b.count  -- Then by amount if same quality
+                    end
+                else
+                    -- For useLowest=false, prefer lower quality (higher index) even if amount is higher
+                    if a.index ~= b.index then
+                        return a.index < b.index  -- Higher index (lower quality) first
+                    else
+                        return a.count < b.count  -- Then by amount if same quality
+                    end
+                end
             end
         else
             if useLowest then
