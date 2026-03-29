@@ -2,9 +2,58 @@ local f = CreateFrame("Frame")
 f:RegisterEvent("BAG_UPDATE")
 f:RegisterEvent("PLAYER_LOGIN")
 f:RegisterEvent("PLAYER_REGEN_ENABLED")
+f:RegisterEvent("PLAYER_ENTERING_WORLD")
+
+-- Tempest Keep: The Eye + the three Tempest Keep dungeons (instance map IDs from GetInstanceInfo, 8th return)
+local TEMPEST_KEEP_INSTANCE_IDS = {
+    [550] = true, -- The Eye (Tempest Keep raid)
+    [552] = true, -- The Arcatraz
+    [553] = true, -- The Botanica
+    [554] = true, -- The Mechanar
+}
+
+-- Coilfang Reservoir: SSC + the three Coilfang dungeons
+local COILFANG_INSTANCE_IDS = {
+    [548] = true, -- Serpentshrine Cavern
+    [546] = true, -- The Underbog
+    [545] = true, -- The Steamvault
+    [547] = true, -- The Slave Pens
+}
+
+-- Items only usable in certain instances; value is "tempest" or "coilfang"
+local INSTANCE_RESTRICTED_ITEMS = {
+    [32905] = "tempest", -- Bottled Nethergon Vapor
+    [32902] = "tempest", -- Bottled Nethergon Energy
+    [32904] = "coilfang", -- Cenarion Healing Salve
+    [32903] = "coilfang", -- Cenarion Mana Salve
+}
+
+local function IsInTempestKeepInstance()
+    local instanceMapId = select(8, GetInstanceInfo())
+    return instanceMapId and TEMPEST_KEEP_INSTANCE_IDS[instanceMapId]
+end
+
+local function IsInCoilfangInstance()
+    local instanceMapId = select(8, GetInstanceInfo())
+    return instanceMapId and COILFANG_INSTANCE_IDS[instanceMapId]
+end
+
+local function ItemIsAllowedInCurrentLocation(itemId)
+    local zone = INSTANCE_RESTRICTED_ITEMS[itemId]
+    if zone == "tempest" then
+        return IsInTempestKeepInstance()
+    elseif zone == "coilfang" then
+        return IsInCoilfangInstance()
+    end
+    return true
+end
 
 -- Define item lists globally
 local bandages = {
+    -- TBC
+    21991, -- Heavy Netherweave Bandage
+    21990, -- Netherweave Bandage
+    -- Classic
     23684, -- Crystal Infused Bandage
     20234, -- Defiler's Runecloth Bandage
     20243, -- Highlander's Runecloth Bandage
@@ -32,6 +81,12 @@ local bandages = {
 }
 
 local manaPotions = {
+    -- TBC
+    32903, -- Cenarion Mana Salve (Coilfang instances only)
+    32902, -- Bottled Nethergon Energy (Tempest Keep only; skipped outside via ItemIsAllowedInCurrentLocation)
+    22832, -- Super Mana Potion
+    22850, -- Super Rejuvenation Potion
+    -- Classic
     18253, -- Major Rejuvenation Potion
     13444, -- Major Mana Potion
     17351, -- Major Mana Draught
@@ -48,6 +103,13 @@ local manaPotions = {
 }
 
 local healthstones = {
+    -- TBC
+    19013, -- Major Healthstone
+    22103, -- Master Healthstone
+    22104, -- Master Healthstone
+    22105, -- Master Healthstone
+
+    -- Classic / fallback
     9421,  -- Major Healthstone (Rank 5)
     5510,  -- Greater Healthstone (Rank 4)
     5509,  -- Healthstone (Rank 3)
@@ -56,6 +118,12 @@ local healthstones = {
 }
 
 local potions = {
+    -- TBC
+    32904, -- Cenarion Healing Salve (Coilfang instances only)
+    32905, -- Bottled Nethergon Vapor (Tempest Keep only; skipped outside via ItemIsAllowedInCurrentLocation)
+    22829, -- Super Healing Potion
+    22850, -- Super Rejuvenation Potion
+    -- Classic
     13446, -- Major Healing Potion
     17348, -- Major Healing Draught
     3928,  -- Superior Healing Potion
@@ -71,6 +139,13 @@ local potions = {
 
 -- Add these new item lists after the existing ones
 local drinks = {
+    -- TBC
+    34062, -- Conjured Mana Biscuit (food and drink)
+    30703, -- Conjured Mountain Spring Water
+    27860, -- Purified Draenic Water
+    28399, -- Filtered Draenic Water
+    22018, -- Conjured Glacier Water
+    -- Classic
     8079,  -- Conjured Crystal Water
     18300, -- Hyjal Nectar
     8078,  -- Conjured Sparkling Water
@@ -95,6 +170,28 @@ local drinks = {
 }
 
 local foods = {
+    -- TBC Outland
+    34062, -- Conjured Mana Biscuit (food and drink)
+    27658, -- Roasted Clefthoof
+    27660, -- Talbuk Steak
+    27655, -- Ravager Dog
+    27661, -- Warp Burger
+    27659, -- Mok'Nathal Shortribs
+    27651, -- Buzzard Bites
+    27662, -- Feltail Delight
+    27663, -- Blackened Trout
+    27858, -- Sunspring Carp
+    27664, -- Grilled Mudfish
+    27665, -- Poached Bluefish
+    27666, -- Golden Fish Sticks
+    27667, -- Spicy Crawdad
+    33048, -- Stewed Trout
+    33867, -- Broiled Bloodfin
+    27657, -- Grilled Basilisk
+    30155, -- Clam Bar
+    33825, -- Skullfish Soup
+    27636, -- Bat Bites
+    -- Classic
     21215, -- Graccu's Mince Meat Fruitcake
     21537, -- Festival Dumplings
     23172, -- Refreshing Red Apple
@@ -219,6 +316,27 @@ local foods = {
 }
 
 local buffFoods = {
+    -- TBC Outland (stat buffs)
+    35565, -- Juicy Bear Burger
+    27658, -- Roasted Clefthoof
+    27660, -- Talbuk Steak
+    27655, -- Ravager Dog
+    27661, -- Warp Burger
+    27659, -- Mok'Nathal Shortribs
+    27651, -- Buzzard Bites
+    27662, -- Feltail Delight
+    27663, -- Blackened Trout
+    27664, -- Grilled Mudfish
+    27665, -- Poached Bluefish
+    27666, -- Golden Fish Sticks
+    27667, -- Spicy Crawdad
+    33048, -- Stewed Trout
+    33867, -- Broiled Bloodfin
+    27657, -- Grilled Basilisk
+    30155, -- Clam Bar
+    33825, -- Skullfish Soup
+    27636, -- Bat Bites
+    -- Classic
     21023, -- Dirge's Kickin' Chimaerok Chops
     20452, -- Smoked Desert Dumplings
     21254, -- Winter Veil Cookie
@@ -615,15 +733,32 @@ local function GetItemLevel(itemId)
     return 0
 end
 
-local function FindFirstItem(itemList, useLowest)
+-- Macro pick order uses item "level" from GetItemInfo; instance-only potions often lose to Super Mana/Super Healing
+-- by ilvl alone. While inside the matching instances, prefer those items for sorting.
+local function GetMacroItemSortLevel(itemId, useLowest)
+    local lvl = GetItemLevel(itemId)
+    local zone = INSTANCE_RESTRICTED_ITEMS[itemId]
+    local inZone = (zone == "tempest" and IsInTempestKeepInstance())
+        or (zone == "coilfang" and IsInCoilfangInstance())
+    if inZone then
+        if useLowest then
+            return lvl - 100000
+        else
+            return lvl + 100000
+        end
+    end
+    return lvl
+end
+
+local function FindFirstItem(itemList, useLowest, extraAllowFn)
     local availableItems = {}
     
     -- Collect all available items with their counts and levels
     for i, itemId in ipairs(itemList) do
         local count = GetItemCount(itemId)
-        if count > 0 then
+        if count > 0 and ItemIsAllowedInCurrentLocation(itemId) and (not extraAllowFn or extraAllowFn(itemId)) then
             local itemName = GetItemInfo(itemId)
-            local itemLevel = GetItemLevel(itemId)
+            local sortLevel = GetMacroItemSortLevel(itemId, useLowest)
             
             -- Handle nil item names (uncached items)
             if not itemName then
@@ -635,7 +770,7 @@ local function FindFirstItem(itemList, useLowest)
                 count = count, 
                 index = i, 
                 name = itemName,
-                level = itemLevel
+                level = sortLevel
             })
         end
     end
@@ -677,9 +812,9 @@ local function FindFirstItemByAmount(itemList, useLowest)
     -- Collect all available items with their counts and levels
     for i, itemId in ipairs(itemList) do
         local count = GetItemCount(itemId)
-        if count > 0 then
+        if count > 0 and ItemIsAllowedInCurrentLocation(itemId) then
             local itemName = GetItemInfo(itemId)
-            local itemLevel = GetItemLevel(itemId)
+            local sortLevel = GetMacroItemSortLevel(itemId, useLowest)
             
             -- Handle nil item names (uncached items)
             if not itemName then
@@ -692,9 +827,9 @@ local function FindFirstItemByAmount(itemList, useLowest)
                 count = count, 
                 index = i, 
                 name = itemName,
-                level = itemLevel
+                level = sortLevel
             })
-            LogDebug("Available: " .. itemName .. " (Level " .. itemLevel .. ", x" .. count .. ", index " .. i .. ")")
+            LogDebug("Available: " .. itemName .. " (Level " .. GetItemLevel(itemId) .. ", x" .. count .. ", index " .. i .. ")")
         end
     end
     
@@ -724,7 +859,7 @@ local function FindFirstItemByAmount(itemList, useLowest)
     
     LogDebug("After level sorting:")
     for i, item in ipairs(availableItems) do
-        LogDebug("  " .. i .. ". " .. item.name .. " (Level " .. item.level .. ", x" .. item.count .. ")")
+        LogDebug("  " .. i .. ". " .. item.name .. " (Level " .. GetItemLevel(item.id) .. ", x" .. item.count .. ")")
     end
     
     -- Find the best level items (first item after sorting)
@@ -781,7 +916,7 @@ local function FindFirstItemByAmount(itemList, useLowest)
     end
     
     local selectedItem = sameLevelItems[1]
-    LogDebug("Selected: " .. selectedItem.name .. " (Level " .. selectedItem.level .. ", x" .. selectedItem.count .. ")")
+    LogDebug("Selected: " .. selectedItem.name .. " (Level " .. GetItemLevel(selectedItem.id) .. ", x" .. selectedItem.count .. ")")
     LogDebug("=== End FindFirstItemByAmount ===")
     
     return selectedItem.id
@@ -797,9 +932,9 @@ local function FindFirstItemByAmountReverse(itemList, useLowest)
     -- Collect all available items with their counts and levels
     for i, itemId in ipairs(itemList) do
         local count = GetItemCount(itemId)
-        if count > 0 then
+        if count > 0 and ItemIsAllowedInCurrentLocation(itemId) then
             local itemName = GetItemInfo(itemId)
-            local itemLevel = GetItemLevel(itemId)
+            local sortLevel = GetMacroItemSortLevel(itemId, useLowest)
             
             -- Handle nil item names (uncached items)
             if not itemName then
@@ -812,9 +947,9 @@ local function FindFirstItemByAmountReverse(itemList, useLowest)
                 count = count, 
                 index = i, 
                 name = itemName,
-                level = itemLevel
+                level = sortLevel
             })
-            LogDebug("Available: " .. itemName .. " (Level " .. itemLevel .. ", x" .. count .. ", index " .. i .. ")")
+            LogDebug("Available: " .. itemName .. " (Level " .. GetItemLevel(itemId) .. ", x" .. count .. ", index " .. i .. ")")
         end
     end
     
@@ -844,7 +979,7 @@ local function FindFirstItemByAmountReverse(itemList, useLowest)
     
     LogDebug("After level sorting:")
     for i, item in ipairs(availableItems) do
-        LogDebug("  " .. i .. ". " .. item.name .. " (Level " .. item.level .. ", x" .. item.count .. ")")
+        LogDebug("  " .. i .. ". " .. item.name .. " (Level " .. GetItemLevel(item.id) .. ", x" .. item.count .. ")")
     end
     
     -- Find the best level items (first item after sorting)
@@ -901,7 +1036,7 @@ local function FindFirstItemByAmountReverse(itemList, useLowest)
     end
     
     local selectedItem = sameLevelItems[1]
-    LogDebug("Selected: " .. selectedItem.name .. " (Level " .. selectedItem.level .. ", x" .. selectedItem.count .. ")")
+    LogDebug("Selected: " .. selectedItem.name .. " (Level " .. GetItemLevel(selectedItem.id) .. ", x" .. selectedItem.count .. ")")
     LogDebug("=== End FindFirstItemByAmountReverse ===")
     
     return selectedItem.id
@@ -918,9 +1053,9 @@ local function FindConjuredItemFirst(itemList, useLowest)
     -- Separate conjured and regular items
     for i, itemId in ipairs(itemList) do
         local count = GetItemCount(itemId)
-        if count > 0 then
+        if count > 0 and ItemIsAllowedInCurrentLocation(itemId) then
             local itemName = GetItemInfo(itemId)
-            local itemLevel = GetItemLevel(itemId)
+            local sortLevel = GetMacroItemSortLevel(itemId, useLowest)
             
             -- Handle nil item names (uncached items)
             if not itemName then
@@ -932,11 +1067,11 @@ local function FindConjuredItemFirst(itemList, useLowest)
                 -- More precise conjured item detection
                 local isConjured = string.find(string.lower(itemName), "^conjured ")
                 if isConjured then
-                    table.insert(conjuredItems, {id = itemId, count = count, index = i, name = itemName, level = itemLevel})
-                    LogDebug("Conjured: " .. itemName .. " (Level " .. itemLevel .. ", x" .. count .. ")")
+                    table.insert(conjuredItems, {id = itemId, count = count, index = i, name = itemName, level = sortLevel})
+                    LogDebug("Conjured: " .. itemName .. " (Level " .. GetItemLevel(itemId) .. ", x" .. count .. ")")
                 else
-                    table.insert(regularItems, {id = itemId, count = count, index = i, name = itemName, level = itemLevel})
-                    LogDebug("Regular: " .. itemName .. " (Level " .. itemLevel .. ", x" .. count .. ")")
+                    table.insert(regularItems, {id = itemId, count = count, index = i, name = itemName, level = sortLevel})
+                    LogDebug("Regular: " .. itemName .. " (Level " .. GetItemLevel(itemId) .. ", x" .. count .. ")")
                 end
             end
         end
@@ -1016,21 +1151,21 @@ local function FindConjuredItemFirst(itemList, useLowest)
     
     LogDebug("Conjured items after sorting:")
     for i, item in ipairs(conjuredItems) do
-        LogDebug("  " .. i .. ". " .. item.name .. " (Level " .. item.level .. ", x" .. item.count .. ")")
+        LogDebug("  " .. i .. ". " .. item.name .. " (Level " .. GetItemLevel(item.id) .. ", x" .. item.count .. ")")
     end
     
     LogDebug("Regular items after sorting:")
     for i, item in ipairs(regularItems) do
-        LogDebug("  " .. i .. ". " .. item.name .. " (Level " .. item.level .. ", x" .. item.count .. ")")
+        LogDebug("  " .. i .. ". " .. item.name .. " (Level " .. GetItemLevel(item.id) .. ", x" .. item.count .. ")")
     end
     
     -- Return conjured item first if available, otherwise regular item
     if #conjuredItems > 0 then
-        LogDebug("Selected conjured: " .. conjuredItems[1].name .. " (Level " .. conjuredItems[1].level .. ", x" .. conjuredItems[1].count .. ")")
+        LogDebug("Selected conjured: " .. conjuredItems[1].name .. " (Level " .. GetItemLevel(conjuredItems[1].id) .. ", x" .. conjuredItems[1].count .. ")")
         LogDebug("=== End FindConjuredItemFirst ===")
         return conjuredItems[1].id
     elseif #regularItems > 0 then
-        LogDebug("Selected regular: " .. regularItems[1].name .. " (Level " .. regularItems[1].level .. ", x" .. regularItems[1].count .. ")")
+        LogDebug("Selected regular: " .. regularItems[1].name .. " (Level " .. GetItemLevel(regularItems[1].id) .. ", x" .. regularItems[1].count .. ")")
         LogDebug("=== End FindConjuredItemFirst ===")
         return regularItems[1].id
     end
@@ -1065,13 +1200,24 @@ local function UpdateMacro()
         manaItem = FindFirstItem(manaPotions, AutoPotionPlusDB[charKey].useLowestMana)
     end
     
+    -- TK-only Nethergon Vapor and Coilfang-only Cenarion Healing Salve: if "healthstone first" is on,
+    -- use a normal healing potion as the /use fallback when no stone (same idea as Vapor).
+    local function healPotionExtraAllow(itemId)
+        if AutoPotionPlusDB[charKey].useHealthstoneFirst then
+            if itemId == 32905 or itemId == 32904 then
+                return false
+            end
+        end
+        return true
+    end
+
     -- Changed healthstone logic
     if AutoPotionPlusDB[charKey].useHealthstoneFirst then
         -- If checkbox is checked, try healthstone first, then fallback to potion
-        healItem = FindFirstItem(healthstones, false) or FindFirstItem(potions, AutoPotionPlusDB[charKey].useLowestHealing)
+        healItem = FindFirstItem(healthstones, false) or FindFirstItem(potions, AutoPotionPlusDB[charKey].useLowestHealing, healPotionExtraAllow)
     else
         -- If checkbox is unchecked, try potion first, then fallback to healthstone
-        healItem = FindFirstItem(potions, AutoPotionPlusDB[charKey].useLowestHealing) or FindFirstItem(healthstones, false)
+        healItem = FindFirstItem(potions, AutoPotionPlusDB[charKey].useLowestHealing, healPotionExtraAllow) or FindFirstItem(healthstones, false)
     end
     
     -- Set appropriate defaults for each category
@@ -2026,7 +2172,7 @@ local function DebugItems()
         local found = false
         for _, itemID in ipairs(list) do
             local count = GetItemCount(itemID)
-            if count > 0 then
+            if count > 0 and ItemIsAllowedInCurrentLocation(itemID) then
                 found = true
                 message = message .. GetItemLink(itemID) .. " (x" .. count .. "), "
             end

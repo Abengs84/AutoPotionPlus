@@ -43,3 +43,7 @@ luac.out
 *.py
 *.xlsx
 *.png
+
+.specstory/
+.cursorindexingignore
+.vscode/
