@@ -102,6 +102,12 @@ local manaPotions = {
     2456   -- Minor Rejuvenation Potion
 }
 
+-- Health-for-mana runes (optional priority for Healer mode / mana bar)
+local demonicManaItems = {
+    12662, -- Demonic Rune
+    20520  -- Dark Rune
+}
+
 local healthstones = {
     -- TBC
     19013, -- Major Healthstone
@@ -423,6 +429,8 @@ local defaults = {
     useLowestDrink = false,
     useLowestBandage = false,
     warriorMode = false,
+    healerMode = false,
+    prioritizeDemonicRunes = false,
     useHealthstoneFirst = false,
     useAmountPriority = true, -- Choose least amount first when levels are same
     preferConjured = false, -- Always choose conjured food/drink first
@@ -721,6 +729,12 @@ local function InitializeSettings()
     -- Add minimap position if it doesn't exist
     if AutoPotionPlusDB[charKey].minimapPos == nil then
         AutoPotionPlusDB[charKey].minimapPos = minimapDefaults.minimapPos
+    end
+    if AutoPotionPlusDB[charKey].healerMode == nil then
+        AutoPotionPlusDB[charKey].healerMode = false
+    end
+    if AutoPotionPlusDB[charKey].prioritizeDemonicRunes == nil then
+        AutoPotionPlusDB[charKey].prioritizeDemonicRunes = false
     end
 end
 
@@ -1186,19 +1200,40 @@ local function UpdateMacro()
         AutoPotionPlusDB[charKey] = CopyTable(defaults)
     end
 
-    -- Build lists of available items using new logic
+    -- Build lists of available items using new logic (use saved list order from Manage Items)
+    local bandageListSrc = categoryToList["Bandages"] or bandages
+    local manaListSrc = categoryToList["Mana Potions"] or manaPotions
+    local healPotionsListSrc = categoryToList["Healing Potions"] or potions
+    local healthstonesListSrc = categoryToList["Healthstones"] or healthstones
+
     local bandageItem
     local manaItem
     local healItem
+
+    local function PickManaItem()
+        local useAmt = AutoPotionPlusDB[charKey].useAmountPriority
+        local useLow = AutoPotionPlusDB[charKey].useLowestMana
+        if AutoPotionPlusDB[charKey].prioritizeDemonicRunes then
+            if useAmt then
+                return FindFirstItemByAmount(demonicManaItems, useLow)
+                    or FindFirstItemByAmount(manaListSrc, useLow)
+            end
+            return FindFirstItem(demonicManaItems, useLow)
+                or FindFirstItem(manaListSrc, useLow)
+        end
+        if useAmt then
+            return FindFirstItemByAmount(manaListSrc, useLow)
+        end
+        return FindFirstItem(manaListSrc, useLow)
+    end
     
     -- Use appropriate item finding function based on settings
     if AutoPotionPlusDB[charKey].useAmountPriority then
-        bandageItem = FindFirstItemByAmount(bandages, AutoPotionPlusDB[charKey].useLowestBandage)
-        manaItem = FindFirstItemByAmount(manaPotions, AutoPotionPlusDB[charKey].useLowestMana)
+        bandageItem = FindFirstItemByAmount(bandageListSrc, AutoPotionPlusDB[charKey].useLowestBandage)
     else
-        bandageItem = FindFirstItem(bandages, AutoPotionPlusDB[charKey].useLowestBandage)
-        manaItem = FindFirstItem(manaPotions, AutoPotionPlusDB[charKey].useLowestMana)
+        bandageItem = FindFirstItem(bandageListSrc, AutoPotionPlusDB[charKey].useLowestBandage)
     end
+    manaItem = PickManaItem()
     
     -- TK-only Nethergon Vapor and Coilfang-only Cenarion Healing Salve: if "healthstone first" is on,
     -- use a normal healing potion as the /use fallback when no stone (same idea as Vapor).
@@ -1214,10 +1249,10 @@ local function UpdateMacro()
     -- Changed healthstone logic
     if AutoPotionPlusDB[charKey].useHealthstoneFirst then
         -- If checkbox is checked, try healthstone first, then fallback to potion
-        healItem = FindFirstItem(healthstones, false) or FindFirstItem(potions, AutoPotionPlusDB[charKey].useLowestHealing, healPotionExtraAllow)
+        healItem = FindFirstItem(healthstonesListSrc, false) or FindFirstItem(healPotionsListSrc, AutoPotionPlusDB[charKey].useLowestHealing, healPotionExtraAllow)
     else
         -- If checkbox is unchecked, try potion first, then fallback to healthstone
-        healItem = FindFirstItem(potions, AutoPotionPlusDB[charKey].useLowestHealing, healPotionExtraAllow) or FindFirstItem(healthstones, false)
+        healItem = FindFirstItem(healPotionsListSrc, AutoPotionPlusDB[charKey].useLowestHealing, healPotionExtraAllow) or FindFirstItem(healthstonesListSrc, false)
     end
     
     -- Set appropriate defaults for each category
@@ -1225,12 +1260,22 @@ local function UpdateMacro()
     local manaList = manaItem and "item:" .. manaItem or "item:2455" -- Default to Minor Mana Potion
     local healList = healItem and "item:" .. healItem or "item:118" -- Default to Minor Healing Potion
 
-    -- Create macro with conditionals
-    local macroText = string.format(
-        "#showtooltip [mod:shift] %s; [mod:ctrl] %s; %s\n/use [mod:shift] %s; [mod:ctrl] %s; %s",
-        bandagesList, manaList, healList,
-        bandagesList, manaList, healList
-    )
+    -- Create macro with conditionals (shift=bandage, ctrl=mana or heal depending on mode)
+    local macroText
+    if AutoPotionPlusDB[charKey].healerMode then
+        -- Healer mode: mana without modifier, healing with ctrl (swap vs default)
+        macroText = string.format(
+            "#showtooltip [mod:shift] %s; [mod:ctrl] %s; %s\n/use [mod:shift] %s; [mod:ctrl] %s; %s",
+            bandagesList, healList, manaList,
+            bandagesList, healList, manaList
+        )
+    else
+        macroText = string.format(
+            "#showtooltip [mod:shift] %s; [mod:ctrl] %s; %s\n/use [mod:shift] %s; [mod:ctrl] %s; %s",
+            bandagesList, manaList, healList,
+            bandagesList, manaList, healList
+        )
+    end
 
     -- Update the macro
     local macroId = GetMacroIndexByName("AutoPotionPlus")
@@ -1760,6 +1805,8 @@ local function InitializeUI()
     local charKey = GetCharacterKey()
     -- Set up checkbox labels
     _G[AutoPotionPlusFrame:GetName().."WarriorModeCheckText"]:SetText("Warrior Mode (Swap food and drink)")
+    _G[AutoPotionPlusFrame:GetName().."HealerModeCheckText"]:SetText("Healer Mode (Swap mana and healing)")
+    _G[AutoPotionPlusFrame:GetName().."PrioritizeDemonicRunesCheckText"]:SetText("Prioritize Demonic/Dark Runes for mana")
     _G[AutoPotionPlusFrame:GetName().."AmountPrioritySectionLowestCheckText"]:SetText("Choose least amount first")
     _G[AutoPotionPlusFrame:GetName().."ConjuredPreferenceSectionLowestCheckText"]:SetText("Prefer conjured items")
 
@@ -1770,6 +1817,8 @@ local function InitializeUI()
     AutoPotionPlusFrameDrinkSectionLowestCheck:SetChecked(AutoPotionPlusDB[charKey].useLowestDrink)
     AutoPotionPlusFrameBandageSectionLowestCheck:SetChecked(AutoPotionPlusDB[charKey].useLowestBandage)
     AutoPotionPlusFrameWarriorModeCheck:SetChecked(AutoPotionPlusDB[charKey].warriorMode)
+    AutoPotionPlusFrameHealerModeCheck:SetChecked(AutoPotionPlusDB[charKey].healerMode)
+    AutoPotionPlusFramePrioritizeDemonicRunesCheck:SetChecked(AutoPotionPlusDB[charKey].prioritizeDemonicRunes)
     AutoPotionPlusFrameHealthstoneSectionLowestCheck:SetChecked(AutoPotionPlusDB[charKey].useHealthstoneFirst)
     AutoPotionPlusFrameAmountPrioritySectionLowestCheck:SetChecked(AutoPotionPlusDB[charKey].useAmountPriority)
     AutoPotionPlusFrameConjuredPreferenceSectionLowestCheck:SetChecked(AutoPotionPlusDB[charKey].preferConjured)
@@ -1806,6 +1855,16 @@ local function InitializeUI()
     AutoPotionPlusFrameWarriorModeCheck:SetScript("OnClick", function(self)
         AutoPotionPlusDB[charKey].warriorMode = self:GetChecked()
         UpdateFoodMacro()
+    end)
+
+    AutoPotionPlusFrameHealerModeCheck:SetScript("OnClick", function(self)
+        AutoPotionPlusDB[charKey].healerMode = self:GetChecked()
+        UpdateMacro()
+    end)
+
+    AutoPotionPlusFramePrioritizeDemonicRunesCheck:SetScript("OnClick", function(self)
+        AutoPotionPlusDB[charKey].prioritizeDemonicRunes = self:GetChecked()
+        UpdateMacro()
     end)
     
     AutoPotionPlusFrameHealthstoneSectionLowestCheck:SetScript("OnClick", function(self)

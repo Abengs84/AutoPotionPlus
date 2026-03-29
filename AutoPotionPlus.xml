@@ -1,6 +1,6 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <Frame name="AutoPotionPlusFrame" parent="UIParent" movable="true" enableMouse="true" hidden="true" inherits="BackdropTemplate">
-        <Size x="400" y="350"/>
+        <Size x="400" y="390"/>
         <Anchors>
             <Anchor point="CENTER">
                 <Offset x="0" y="0"/>
@@ -208,11 +208,25 @@
                 </Anchors>
             </CheckButton>
 
+            <!-- Healer Mode: swap mana (default) and healing (ctrl) on potion macro -->
+            <CheckButton name="$parentHealerModeCheck" inherits="UICheckButtonTemplate">
+                <Anchors>
+                    <Anchor point="TOPLEFT" x="40" y="-205"/>
+                </Anchors>
+            </CheckButton>
+
+            <!-- Prioritize Demonic/Dark Runes for mana when available -->
+            <CheckButton name="$parentPrioritizeDemonicRunesCheck" inherits="UICheckButtonTemplate">
+                <Anchors>
+                    <Anchor point="TOPLEFT" x="40" y="-230"/>
+                </Anchors>
+            </CheckButton>
+
             <!-- Healthstone Priority Checkbox -->
             <Frame name="$parentHealthstoneSection">
                 <Size x="300" y="30"/>
                 <Anchors>
-                    <Anchor point="TOPLEFT" x="20" y="-210"/>
+                    <Anchor point="TOPLEFT" x="20" y="-255"/>
                 </Anchors>
                 <Layers>
                     <Layer level="ARTWORK">
@@ -237,7 +251,7 @@
             <Frame name="$parentAmountPrioritySection">
                 <Size x="300" y="30"/>
                 <Anchors>
-                    <Anchor point="TOPLEFT" x="20" y="-240"/>
+                    <Anchor point="TOPLEFT" x="20" y="-285"/>
                 </Anchors>
                 <Frames>
                     <CheckButton name="$parentLowestCheck" inherits="UICheckButtonTemplate">
@@ -252,7 +266,7 @@
             <Frame name="$parentConjuredPreferenceSection">
                 <Size x="300" y="30"/>
                 <Anchors>
-                    <Anchor point="TOPLEFT" x="20" y="-270"/>
+                    <Anchor point="TOPLEFT" x="20" y="-315"/>
                 </Anchors>
                 <Frames>
                     <CheckButton name="$parentLowestCheck" inherits="UICheckButtonTemplate">
