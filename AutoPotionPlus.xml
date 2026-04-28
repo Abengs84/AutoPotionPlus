@@ -222,11 +222,18 @@
                 </Anchors>
             </CheckButton>
 
+            <!-- Split macro mode -->
+            <CheckButton name="$parentSplitMacroModeCheck" inherits="UICheckButtonTemplate">
+                <Anchors>
+                    <Anchor point="TOPLEFT" x="40" y="-255"/>
+                </Anchors>
+            </CheckButton>
+
             <!-- Healthstone Priority Checkbox -->
             <Frame name="$parentHealthstoneSection">
                 <Size x="300" y="30"/>
                 <Anchors>
-                    <Anchor point="TOPLEFT" x="20" y="-255"/>
+                    <Anchor point="TOPLEFT" x="20" y="-280"/>
                 </Anchors>
                 <Layers>
                     <Layer level="ARTWORK">
@@ -251,7 +258,7 @@
             <Frame name="$parentAmountPrioritySection">
                 <Size x="300" y="30"/>
                 <Anchors>
-                    <Anchor point="TOPLEFT" x="20" y="-285"/>
+                    <Anchor point="TOPLEFT" x="20" y="-310"/>
                 </Anchors>
                 <Frames>
                     <CheckButton name="$parentLowestCheck" inherits="UICheckButtonTemplate">
@@ -266,7 +273,7 @@
             <Frame name="$parentConjuredPreferenceSection">
                 <Size x="300" y="30"/>
                 <Anchors>
-                    <Anchor point="TOPLEFT" x="20" y="-315"/>
+                    <Anchor point="TOPLEFT" x="20" y="-340"/>
                 </Anchors>
                 <Frames>
                     <CheckButton name="$parentLowestCheck" inherits="UICheckButtonTemplate">

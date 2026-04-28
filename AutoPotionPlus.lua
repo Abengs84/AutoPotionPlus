@@ -108,6 +108,16 @@ local demonicManaItems = {
     20520  -- Dark Rune
 }
 
+-- Mage conjured mana gems
+local manaGems = {
+    5514,  -- Mana Agate
+    5513,  -- Mana Jade
+    8007,  -- Mana Citrine
+    8008,  -- Mana Ruby
+    22044, -- Mana Emerald
+    22045  -- Mana Sapphire
+}
+
 local healthstones = {
     -- TBC
     19013, -- Major Healthstone
@@ -432,6 +442,7 @@ local defaults = {
     healerMode = false,
     prioritizeDemonicRunes = false,
     useHealthstoneFirst = false,
+    splitMacroMode = false,
     useAmountPriority = true, -- Choose least amount first when levels are same
     preferConjured = false, -- Always choose conjured food/drink first
     removedItems = {} -- Add this to track removed items
@@ -735,6 +746,9 @@ local function InitializeSettings()
     end
     if AutoPotionPlusDB[charKey].prioritizeDemonicRunes == nil then
         AutoPotionPlusDB[charKey].prioritizeDemonicRunes = false
+    end
+    if AutoPotionPlusDB[charKey].splitMacroMode == nil then
+        AutoPotionPlusDB[charKey].splitMacroMode = false
     end
 end
 
@@ -1199,6 +1213,9 @@ local function UpdateMacro()
     if not AutoPotionPlusDB[charKey] then
         AutoPotionPlusDB[charKey] = CopyTable(defaults)
     end
+    if AutoPotionPlusDB[charKey].splitMacroMode then
+        return
+    end
 
     -- Build lists of available items using new logic (use saved list order from Manage Items)
     local bandageListSrc = categoryToList["Bandages"] or bandages
@@ -1293,6 +1310,9 @@ local function UpdateFoodMacro()
     if not AutoPotionPlusDB[charKey] then
         AutoPotionPlusDB[charKey] = CopyTable(defaults)
     end
+    if AutoPotionPlusDB[charKey].splitMacroMode then
+        return
+    end
 
     -- Get items from the current lists using appropriate logic
     local drinkItem
@@ -1343,6 +1363,73 @@ local function UpdateFoodMacro()
     if macroId > 0 then
         EditMacro(macroId, nil, nil, macroText)
     end
+end
+
+local function EnsureMacroExists(name, icon)
+    local macroIndex = GetMacroIndexByName(name)
+    if macroIndex == 0 and select(2, GetNumMacros()) < 120 then
+        CreateMacro(name, icon, "", nil)
+    end
+end
+
+local function UpdateSplitMacros()
+    local charKey = GetCharacterKey()
+    if not AutoPotionPlusDB or not AutoPotionPlusDB[charKey] or not AutoPotionPlusDB[charKey].splitMacroMode then
+        return
+    end
+
+    local useAmt = AutoPotionPlusDB[charKey].useAmountPriority
+
+    local function PickFromList(listName, useLowest)
+        local list = categoryToList[listName]
+        if useAmt then
+            return FindFirstItemByAmount(list, useLowest)
+        end
+        return FindFirstItemByAmountReverse(list, useLowest)
+    end
+
+    local function UpdateSimpleMacro(name, itemId, fallbackId)
+        local macroId = GetMacroIndexByName(name)
+        if macroId == 0 then
+            return
+        end
+        local useTarget = itemId and ("item:" .. itemId) or ("item:" .. fallbackId)
+        local text = string.format("#showtooltip %s\n/use %s", useTarget, useTarget)
+        EditMacro(macroId, nil, nil, text)
+    end
+
+    local drinkItem = PickFromList("Drinks", AutoPotionPlusDB[charKey].useLowestDrink)
+    UpdateSimpleMacro("APP_Drinks", drinkItem, 159)
+
+    local foodItem = PickFromList("Regular Foods", AutoPotionPlusDB[charKey].useLowestFood)
+    UpdateSimpleMacro("APP_Food", foodItem, 4536)
+
+    local manaListSrc = categoryToList["Mana Potions"] or manaPotions
+    local manaItem
+    if AutoPotionPlusDB[charKey].prioritizeDemonicRunes then
+        manaItem = FindFirstItem(demonicManaItems, AutoPotionPlusDB[charKey].useLowestMana)
+            or FindFirstItem(manaGems, AutoPotionPlusDB[charKey].useLowestMana)
+            or (useAmt and FindFirstItemByAmount(manaListSrc, AutoPotionPlusDB[charKey].useLowestMana)
+                or FindFirstItem(manaListSrc, AutoPotionPlusDB[charKey].useLowestMana))
+    else
+        manaItem = (useAmt and FindFirstItemByAmount(manaListSrc, AutoPotionPlusDB[charKey].useLowestMana)
+            or FindFirstItem(manaListSrc, AutoPotionPlusDB[charKey].useLowestMana))
+            or FindFirstItem(demonicManaItems, AutoPotionPlusDB[charKey].useLowestMana)
+            or FindFirstItem(manaGems, AutoPotionPlusDB[charKey].useLowestMana)
+    end
+    UpdateSimpleMacro("APP_Mana", manaItem, 2455)
+
+    local healPotionsListSrc = categoryToList["Healing Potions"] or potions
+    local healthstonesListSrc = categoryToList["Healthstones"] or healthstones
+    local healItem
+    if AutoPotionPlusDB[charKey].useHealthstoneFirst then
+        healItem = FindFirstItem(healthstonesListSrc, false)
+            or FindFirstItem(healPotionsListSrc, AutoPotionPlusDB[charKey].useLowestHealing)
+    else
+        healItem = FindFirstItem(healPotionsListSrc, AutoPotionPlusDB[charKey].useLowestHealing)
+            or FindFirstItem(healthstonesListSrc, false)
+    end
+    UpdateSimpleMacro("APP_Health", healItem, 118)
 end
 
 -- Then define the item list management functions
@@ -1587,6 +1674,7 @@ local function UpdateItemListDisplay(category, forceFull)
                         UpdateItemListDisplay(category, true)
                         UpdateMacro()
                         UpdateFoodMacro()
+                        UpdateSplitMacros()
                         return
                     end
                     
@@ -1624,6 +1712,7 @@ local function UpdateItemListDisplay(category, forceFull)
                                     UpdateFoodMacro()
                                 end
                                 UpdateMacro()
+                                UpdateSplitMacros()
                             end
                             
                             -- Refresh display after reorder action
@@ -1744,6 +1833,8 @@ local function InitializeCategoryList()
 end
 
 -- Finally define HandleItemDrop which uses the above functions
+local CreateSplitMacrosIfNeeded
+local DeleteSplitMacrosIfPresent
 local function HandleItemDrop()
     local cursorType, id, _, link = GetCursorInfo()
     
@@ -1795,6 +1886,7 @@ local function HandleItemDrop()
                 UpdateFoodMacro()
             end
             UpdateMacro()
+            UpdateSplitMacros()
         end
         ClearCursor()
     end
@@ -1807,6 +1899,7 @@ local function InitializeUI()
     _G[AutoPotionPlusFrame:GetName().."WarriorModeCheckText"]:SetText("Warrior Mode (Swap food and drink)")
     _G[AutoPotionPlusFrame:GetName().."HealerModeCheckText"]:SetText("Healer Mode (Swap mana and healing)")
     _G[AutoPotionPlusFrame:GetName().."PrioritizeDemonicRunesCheckText"]:SetText("Prioritize Demonic/Dark Runes for mana")
+    _G[AutoPotionPlusFrame:GetName().."SplitMacroModeCheckText"]:SetText("Split Macro Mode (create 4 dedicated macros)")
     _G[AutoPotionPlusFrame:GetName().."AmountPrioritySectionLowestCheckText"]:SetText("Choose least amount first")
     _G[AutoPotionPlusFrame:GetName().."ConjuredPreferenceSectionLowestCheckText"]:SetText("Prefer conjured items")
 
@@ -1819,6 +1912,7 @@ local function InitializeUI()
     AutoPotionPlusFrameWarriorModeCheck:SetChecked(AutoPotionPlusDB[charKey].warriorMode)
     AutoPotionPlusFrameHealerModeCheck:SetChecked(AutoPotionPlusDB[charKey].healerMode)
     AutoPotionPlusFramePrioritizeDemonicRunesCheck:SetChecked(AutoPotionPlusDB[charKey].prioritizeDemonicRunes)
+    AutoPotionPlusFrameSplitMacroModeCheck:SetChecked(AutoPotionPlusDB[charKey].splitMacroMode)
     AutoPotionPlusFrameHealthstoneSectionLowestCheck:SetChecked(AutoPotionPlusDB[charKey].useHealthstoneFirst)
     AutoPotionPlusFrameAmountPrioritySectionLowestCheck:SetChecked(AutoPotionPlusDB[charKey].useAmountPriority)
     AutoPotionPlusFrameConjuredPreferenceSectionLowestCheck:SetChecked(AutoPotionPlusDB[charKey].preferConjured)
@@ -1830,21 +1924,25 @@ local function InitializeUI()
     AutoPotionPlusFrameHealingSectionLowestCheck:SetScript("OnClick", function(self)
         AutoPotionPlusDB[charKey].useLowestHealing = self:GetChecked()
         UpdateMacro()
+        UpdateSplitMacros()
     end)
     
     AutoPotionPlusFrameManaSectionLowestCheck:SetScript("OnClick", function(self)
         AutoPotionPlusDB[charKey].useLowestMana = self:GetChecked()
         UpdateMacro()
+        UpdateSplitMacros()
     end)
     
     AutoPotionPlusFrameFoodSectionLowestCheck:SetScript("OnClick", function(self)
         AutoPotionPlusDB[charKey].useLowestFood = self:GetChecked()
         UpdateFoodMacro()
+        UpdateSplitMacros()
     end)
     
     AutoPotionPlusFrameDrinkSectionLowestCheck:SetScript("OnClick", function(self)
         AutoPotionPlusDB[charKey].useLowestDrink = self:GetChecked()
         UpdateFoodMacro()
+        UpdateSplitMacros()
     end)
     
     AutoPotionPlusFrameBandageSectionLowestCheck:SetScript("OnClick", function(self)
@@ -1865,22 +1963,38 @@ local function InitializeUI()
     AutoPotionPlusFramePrioritizeDemonicRunesCheck:SetScript("OnClick", function(self)
         AutoPotionPlusDB[charKey].prioritizeDemonicRunes = self:GetChecked()
         UpdateMacro()
+        UpdateSplitMacros()
+    end)
+
+    AutoPotionPlusFrameSplitMacroModeCheck:SetScript("OnClick", function(self)
+        AutoPotionPlusDB[charKey].splitMacroMode = self:GetChecked()
+        if AutoPotionPlusDB[charKey].splitMacroMode then
+            CreateSplitMacrosIfNeeded()
+        else
+            DeleteSplitMacrosIfPresent()
+        end
+        UpdateMacro()
+        UpdateFoodMacro()
+        UpdateSplitMacros()
     end)
     
     AutoPotionPlusFrameHealthstoneSectionLowestCheck:SetScript("OnClick", function(self)
         AutoPotionPlusDB[charKey].useHealthstoneFirst = self:GetChecked()
         UpdateMacro()
+        UpdateSplitMacros()
     end)
     
     AutoPotionPlusFrameAmountPrioritySectionLowestCheck:SetScript("OnClick", function(self)
         AutoPotionPlusDB[charKey].useAmountPriority = self:GetChecked()
         UpdateMacro()
         UpdateFoodMacro()
+        UpdateSplitMacros()
     end)
     
     AutoPotionPlusFrameConjuredPreferenceSectionLowestCheck:SetScript("OnClick", function(self)
         AutoPotionPlusDB[charKey].preferConjured = self:GetChecked()
         UpdateFoodMacro()
+        UpdateSplitMacros()
     end)
 
     -- Replace dropdown initialization with category list
@@ -1977,6 +2091,28 @@ local function CreateFoodMacroIfNeeded()
         -- Create a global macro if there's space
         if select(2, GetNumMacros()) < 120 then
             CreateMacro("AutoFoodPlus", "INV_MISC_QUESTIONMARK", "", nil)
+        end
+    end
+end
+
+CreateSplitMacrosIfNeeded = function()
+    EnsureMacroExists("APP_Drinks", "INV_Drink_07")
+    EnsureMacroExists("APP_Food", "INV_Misc_Food_23")
+    EnsureMacroExists("APP_Mana", "INV_Potion_76")
+    EnsureMacroExists("APP_Health", "INV_Potion_54")
+end
+
+DeleteSplitMacrosIfPresent = function()
+    local splitMacroNames = {
+        "APP_Drinks",
+        "APP_Food",
+        "APP_Mana",
+        "APP_Health"
+    }
+    for _, macroName in ipairs(splitMacroNames) do
+        local macroIndex = GetMacroIndexByName(macroName)
+        if macroIndex and macroIndex > 0 then
+            DeleteMacro(macroIndex)
         end
     end
 end
@@ -2192,6 +2328,9 @@ f:SetScript("OnEvent", function(self, event)
         InitializeSettings()
         CreateMacroIfNeeded()
         CreateFoodMacroIfNeeded()
+        if not AutoPotionPlusDB[GetCharacterKey()].splitMacroMode then
+            DeleteSplitMacrosIfPresent()
+        end
         InitializeUI()
         InitializeDebugLogUI() -- Initialize debug log UI
         -- Create the minimap button after a short delay to ensure everything is loaded
@@ -2202,6 +2341,7 @@ f:SetScript("OnEvent", function(self, event)
     end
     UpdateMacro()
     UpdateFoodMacro()
+    UpdateSplitMacros()
 end)
 
 SLASH_AUTOPOTIONUI1 = "/autopotionui"
@@ -2316,6 +2456,7 @@ function ResetAllSettings()
             -- Update macros
             UpdateMacro()
             UpdateFoodMacro()
+            UpdateSplitMacros()
             
             -- Update UI elements to reflect reset settings
             InitializeUI()

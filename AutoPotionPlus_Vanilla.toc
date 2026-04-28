@@ -1,4 +1,4 @@
-## Interface: 20505
+## Interface: 11508
 ## Title: AutoPotionPlus
 ## Notes: An improved AutoPotion addon with modifier support and UI.
 ## Author: Uthenaria
